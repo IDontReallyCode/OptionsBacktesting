@@ -1,3 +1,7 @@
+[TODO] Make this readme not look so freakin ugly.
+
+
+
 This is my attempt to build a backtesting framework that deals with options
 
 The outline is this:
