@@ -13,11 +13,6 @@
 
 import numpy as np
 import pandas as pd
-# from account import account
-# from broker import dealer
-# from chronos import chronos
-# from dataobjects import oneticker, market
-# from strategy import abstractstrategy
 import optionbacktesting as obt
 
 class strategy(obt.abstractstrategy.strategy):
