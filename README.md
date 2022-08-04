@@ -38,3 +38,5 @@ The second step is to execute
         => return the new capital available
       4- Update the strategy with the new candle, tell the strategy to update, 
         => return new orders, if any.
+
+
