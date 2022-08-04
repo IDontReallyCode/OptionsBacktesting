@@ -20,6 +20,13 @@ class chronos():
         self.account = clientaccount
         self.strategy = clientstrategy
 
+
+    def primingthestrategyat(self, timeindex:int):
+        self.market.priming(timeindex)
+        self.broker.priming(timeindex)
+        self.account.priming(timeindex)
+        self.strategy.priming(timeindex, self.market.getdatasofar())
+        
         
     def execute(self):
         pass
