@@ -1,14 +1,24 @@
 This is my attempt to build a backtesting framework that deals with options
 
 The outline is this:
+
 1- Get the entire dataset you need for one or more tickers, including the option chains, at some specific time interval. It can be daily, 1 min, 10 min, etc.
+
 2- Initialize the oneticker classes with the datasets
+
   2.1- To simplify "MY" life, I will start by dealing with the data format that comes out of the TDA API
+  
 3- Once all oneticker have been initialized, initialize the market class
+
 4- Initialize the account with a deposit, a margin type, ?
+
 5- Ititialize the broker/dealer with the marketdata
+
 6- Initialize the strategy with nothing yet
+
 7- Initialize chronos, the god of time, with marketdata, the account, the broker/dealer, the strategy
+
+
 
 You are now ready to start.
 
