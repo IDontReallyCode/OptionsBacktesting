@@ -32,7 +32,7 @@ Executing means:
    - => return the updated order queue
 3. Tell the account to update based on the order updates
    - => return the new capital available
-4- Update the strategy with the new candle, tell the strategy to update, 
+4. Update the strategy with the new candle, tell the strategy to update, 
    - => return new orders, if any.
 
 
