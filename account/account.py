@@ -34,4 +34,6 @@ class account():
         """
             Since this class will have what it takes to deal with margins, the methods to know the margin of a trade will be right in here.
         """
+        if self.margintype==0:
+            return 0.0
         pass
