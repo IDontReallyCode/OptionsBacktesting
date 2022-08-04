@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
-from broker import dealer
-from account import account
-from dataobjects import market
-from strategy import abstractstrategy
+from .dealer import dealer
+from .account import account
+from .market import market
+from .abstractstrategy import strategy
 
 class chronos():
     """
@@ -14,7 +14,7 @@ class chronos():
             - The dealer data will contain the orders that were sent, and executed
             - the account data will containt the time series evolution of the capital, the margin, (and other metrics as we evolve)
     """
-    def __init__(self, marketdata:market.market, marketbroker:dealer.dealer, clientaccount:account.account, clientstrategy:abstractstrategy.strategy) -> None:
+    def __init__(self, marketdata:market, marketbroker:dealer, clientaccount:account, clientstrategy:strategy) -> None:
         self.market = marketdata
         self.broker = marketbroker
         self.account = clientaccount
@@ -22,11 +22,12 @@ class chronos():
 
 
     def primingthestrategyat(self, timeindex:int):
-        self.market.priming(timeindex)
+        datasofar = self.market.priming(timeindex)
         self.broker.priming(timeindex)
         self.account.priming(timeindex)
         self.strategy.priming(timeindex, self.market.getdatasofar())
 
         
     def execute(self):
+
         pass

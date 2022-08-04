@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from dataobjects import market
+from .market import market
 
 
 class dealer():

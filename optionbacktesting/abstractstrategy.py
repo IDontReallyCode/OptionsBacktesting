@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
-from dataobjects import market
-from account import account
+# from market import market
+# from account import account
 
 """
     ???????????????????????
@@ -15,6 +15,11 @@ class strategy(ABC):
         """
             A strategy will receive new data through a CALL from chronos.
         """
+        self.data = pd.DataFrame([None])
+        self.timeindex = 0
+        self.outgoingorders = [None]
+        self.waitingorders = [None]
+
         super().__init__()
 
 
@@ -24,6 +29,7 @@ class strategy(ABC):
             or whatever it need to start spitting out trading signals
         """
         self.data = currentdata
+        self.timeindex = index
         self.estimatestrategy()
 
 
@@ -31,6 +37,7 @@ class strategy(ABC):
         """
             This is where the magic happens
         """
+
 
         # example:
         # if weekday(currentday)==Monday:
@@ -49,4 +56,6 @@ class strategy(ABC):
             2- update a model/forecast/whatever
             3- return new instructions/orders for the market if necessary
         """
+        self.data.append(dataupdate)
+        self.waitingorders = marketfeedback['waitingorders']
         pass

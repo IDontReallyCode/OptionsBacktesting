@@ -35,7 +35,7 @@ def main():
     mystrategy = strategy()
     mychronos = obt.chronos(marketdata=mymarket, marketbroker=mydealer, clientaccount=myaccount, clientstrategy=mystrategy)
 
-    mychronos.primingthestrategyat(0)
+    mychronos.primingthestrategyat(10)
 
     mychronos.execute()
 

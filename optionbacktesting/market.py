@@ -10,6 +10,7 @@ class market():
             After loading the data of one or more tickers (including the option chains), we "package" then toghether into one object that we call "market"
         """
         self.tickerlist = tickerlist
+        self.nbtickers = len(tickerlist)
         for eachticker in self.tickerlist:
             eachticker.resettimer()
         self.currenttime = 0
@@ -18,9 +19,17 @@ class market():
     def priming(self, timeindex:int):
         """
             time step to which we jump because that data was used to initialize the strategy
+            for each ticker in the tickerlist
+                get the data up to the timeindex and return that
         """
         self.currenttime = timeindex
-        return self.currenttime
+        tickerdatasofar = [None]*self.nbtickers
+        optiondatasofar = [None]*self.nbtickers
+        for index, eachticker in enumerate(self.tickerlist):
+            tickerdatasofar[index] = eachticker.tickerts[:timeindex]
+            optiondatasofar[index] = eachticker.optionts[:timeindex]
+
+        return tickerdatasofar, optiondatasofar
 
 
     def getdatasofar(self)->pd.DataFrame:
