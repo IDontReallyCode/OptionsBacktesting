@@ -18,6 +18,11 @@ class dealer():
         self.orderlistexecuted = [None]
 
 
+    def priming(self, timeindex:int)->int:
+        self.currenttime = timeindex
+        return self.currenttime
+        
+
     def sendorder(self, order):
         """
             This is the method through which a strategy sends an order to the dealer to execute

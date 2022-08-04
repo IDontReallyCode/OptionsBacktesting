@@ -11,11 +11,34 @@ from account import account
 """
 
 class strategy(ABC):
-    def __init__(self, currentdata:market, clientaccount:account) -> None:
+    def __init__(self) -> None:
         """
             A strategy will receive new data through a CALL from chronos.
         """
         super().__init__()
+
+
+    def priming(self, currentdata):
+        """
+            Here, the strategy receives the initial set of data which the strategy can use to estimate a model, 
+            or whatever it need to start spitting out trading signals
+        """
+        self.data = currentdata
+        self.estimatestrategy()
+
+
+    def estimatestrategy(self):
+        """
+            This is where the magic happens
+        """
+
+        # example:
+        # if weekday(currentday)==Monday:
+        #     signal = SIGNAL_FULL_BUY
+        # elif weekday(currentday)==Friday:
+        #     signal = SIGNAL_FULL_SELL
+
+        pass
 
 
     def updatedata(self, dataupdate, marketfeedback):

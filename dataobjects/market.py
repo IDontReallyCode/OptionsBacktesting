@@ -15,6 +15,21 @@ class market():
         self.currenttime = 0
 
 
+    def priming(self, timeindex:int):
+        """
+            time step to which we jump because that data was used to initialize the strategy
+        """
+        self.currenttime = timeindex
+        return self.currenttime
+
+
+    def getdatasofar(self)->pd.DataFrame:
+        """
+            Returns all the data that is in the past
+        """
+        pass
+
+
     def getnewbar(self) -> list:
         """
             Will get the next timestep data from each ticker and return a list with the data
