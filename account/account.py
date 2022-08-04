@@ -37,3 +37,7 @@ class account():
         if self.margintype==0:
             return 0.0
         pass
+
+
+    def priming(self, timestep:int):
+        pass

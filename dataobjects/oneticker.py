@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import datetime
 
-class onticker():
+class oneticker():
     """
         oneticker will contain the time series data of a ticker and it's option chain over a specific frequency (daily or intraday)
     """

@@ -18,7 +18,7 @@ class strategy(ABC):
         super().__init__()
 
 
-    def priming(self, currentdata):
+    def priming(self, index, currentdata):
         """
             Here, the strategy receives the initial set of data which the strategy can use to estimate a model, 
             or whatever it need to start spitting out trading signals

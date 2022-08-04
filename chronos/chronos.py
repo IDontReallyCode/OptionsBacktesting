@@ -14,7 +14,7 @@ class chronos():
             - The dealer data will contain the orders that were sent, and executed
             - the account data will containt the time series evolution of the capital, the margin, (and other metrics as we evolve)
     """
-    def __init__(self, marketdata:market, marketbroker:dealer, clientaccount:account, clientstrategy:abstractstrategy) -> None:
+    def __init__(self, marketdata:market.market, marketbroker:dealer.dealer, clientaccount:account.account, clientstrategy:abstractstrategy.strategy) -> None:
         self.market = marketdata
         self.broker = marketbroker
         self.account = clientaccount
@@ -26,7 +26,7 @@ class chronos():
         self.broker.priming(timeindex)
         self.account.priming(timeindex)
         self.strategy.priming(timeindex, self.market.getdatasofar())
-        
+
         
     def execute(self):
         pass
