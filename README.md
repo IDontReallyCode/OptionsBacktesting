@@ -1,6 +1,8 @@
 # Option trading back tester
 
-This is my attempt to build a backtesting framework that deals with options
+This is my attempt to build a backtesting framework that deals with options.
+
+_Disclaimer: I never learned to code in Python. Rather, I figure out a way. Don't point at a mistake unless you are willing to fix it ;)_
 
 
 ## The outline is this:
