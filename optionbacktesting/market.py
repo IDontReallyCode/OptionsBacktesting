@@ -28,10 +28,13 @@ class Market():
         return self.getdatasofar()
 
 
-    def getdatasofar(self)->pd.DataFrame:
+    def getdatasofar(self, newtimestamp = None)->pd.DataFrame:
         """
             Returns all the data that is in the past
         """
+        if newtimestamp is not None:
+            self.currenttime = newtimestamp
+            
         tickerdatasofar = [None]*self.nbtickers
         optiondatasofar = [None]*self.nbtickers
         for index, eachticker in enumerate(self.tickerlist):

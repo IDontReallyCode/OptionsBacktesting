@@ -48,7 +48,7 @@ class Strategy(ABC):
         pass
 
 
-    def updatedata(self, dataupdate, marketfeedback):
+    def updatedata(self, dataupdate, marketfeedback, accountfeedback):
         """
             This method will:
             1- update the data available

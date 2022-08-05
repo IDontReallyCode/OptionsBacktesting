@@ -1,3 +1,4 @@
+from datetime import datetime
 import numpy as np
 import pandas as pd
 from .market import Market
@@ -18,8 +19,8 @@ class Dealer():
         self.orderlistexecuted = [None]
 
 
-    def priming(self, timeindex:int)->int:
-        self.currenttime = timeindex
+    def priming(self, currenttime:datetime)->int:
+        self.currenttime = currenttime
         return self.currenttime
         
 

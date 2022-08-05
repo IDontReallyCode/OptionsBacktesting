@@ -20,6 +20,7 @@ class Account():
         self.margintype = margintype
         self.margin = 0
         self.positions = [None]
+        self.startingtime = 0
         pass
 
 
@@ -49,5 +50,10 @@ class Account():
         pass
 
 
-    def priming(self, timestep:int):
+    def priming(self, currenttime:int):
+        self.startingtime = currenttime
+        return self.startingtime
+        
+    
+    def tradethis(self, dealeraction):
         pass
