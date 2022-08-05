@@ -50,7 +50,6 @@ The DataFrame "MUST" be fed with these columns
 
 ["date_eod", "datetime", "open", "high", "low", "close", "volume"]
 
-Other columns can be there if you need them for strategy
 
 
 ### Option chains data
@@ -59,7 +58,16 @@ Other columns can be there if you need them for strategy
 
 The dataFrame "MUST" be fed with these columns
 
-["date_eod", "datetime", "ticker", "pcflag", "strike", "dte", "expirationdate", "bid", "ask", "bidsize", "asksize", "openinterest", "volume"]
+["date_eod", "datetime", "ticker", "pcflag", "k", "dte", "expirationdate", "bid", "ask", "bid_size", "ask_size", "openinterest", "volume"]
 
-Other columns can be there if you need them for strategy
+
+
+
+### All DataFrame
+
+'datetime' column needs to be of datetime format
+
+Other columns can be there if you need them for strategy.
+
+
 
