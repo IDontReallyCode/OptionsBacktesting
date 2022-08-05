@@ -13,6 +13,7 @@
 
 import numpy as np
 import pandas as pd
+from pyparsing import col
 import optionbacktesting as obt
 
 class strategy(obt.abstractstrategy.strategy):
@@ -28,12 +29,16 @@ class strategy(obt.abstractstrategy.strategy):
 
 def main():
     myaccount = obt.account(deposit=1000)
-    sampledata = pd.read_csv("./privatedata/aaploc.csv", index_col=0)
+    sampledata = pd.read_csv("./privatedata/CLFoc.csv", index_col=0)
+    sampledata['datetime'] = sampledata['date_eod'] # required column
+    sampledata.rename(columns={'oi':'openinterest', 'date_mat':'expirationdate'}, inplace=True)
+    uniquedaydates = pd.DataFrame(sampledata['date_eod'].unique(), columns=['datetime'])
+
     tickeraapl = obt.oneticker(tickername='AAPL', tickertimeseries=pd.DataFrame([None]), optionchaintimeseries=sampledata)
     mymarket = obt.market([tickeraapl])
     mydealer = obt.dealer(marketdata=mymarket)
     mystrategy = strategy()
-    mychronos = obt.chronos(marketdata=mymarket, marketbroker=mydealer, clientaccount=myaccount, clientstrategy=mystrategy)
+    mychronos = obt.chronos(marketdata=mymarket, marketbroker=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
 
     mychronos.primingthestrategyat(10)
 

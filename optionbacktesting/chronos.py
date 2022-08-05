@@ -13,12 +13,16 @@ class chronos():
             - The strategy data will contain the signals that were detected and the orders that were sent to market
             - The dealer data will contain the orders that were sent, and executed
             - the account data will containt the time series evolution of the capital, the margin, (and other metrics as we evolve)
+        
+        self.chronology is the reference time schedule through which Chronos will go through and make time go by.
     """
-    def __init__(self, marketdata:market, marketbroker:dealer, clientaccount:account, clientstrategy:strategy) -> None:
+    def __init__(self, marketdata:market, marketbroker:dealer, clientaccount:account, clientstrategy:strategy, chronology:pd.DataFrame) -> None:
         self.market = marketdata
         self.broker = marketbroker
         self.account = clientaccount
         self.strategy = clientstrategy
+        self.chronology = chronology
+        self.currenttime = chronology['datetime'].iloc[0]
 
 
     def primingthestrategyat(self, timeindex:int):

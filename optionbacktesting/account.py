@@ -16,11 +16,21 @@ class account():
     """
 
     def __init__(self, deposit:float, margintype:int = MARGINTYPE_NONE) -> None:
-        self.wealth = deposit
+        self._wealth = deposit
         self.margintype = margintype
         self.margin = 0
         self.positions = [None]
         pass
+
+
+    @property
+    def wealth(self):
+        return self._wealth
+
+    
+    @wealth.setter
+    def wealth(self, value):
+        self._wealth = value
 
 
     def capitalavailable(self) -> float:
