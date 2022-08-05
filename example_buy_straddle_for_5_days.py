@@ -32,7 +32,7 @@ def main():
     myaccount = obt.Account(deposit=1000)
     sampledata = pd.read_csv("./privatedata/CLFoc.csv", index_col=0)
     # TODO  when creating the datetime column, it needs to be a datetime format.
-    sampledata['datetime'] = sampledata['date_eod'] # required column
+    sampledata['datetime'] = pd.to_datetime(sampledata['date_eod']) # required column
     sampledata.rename(columns={'oi':'openinterest', 'date_mat':'expirationdate'}, inplace=True)
     uniquedaydates = pd.DataFrame(sampledata['date_eod'].unique(), columns=['datetime'])
 

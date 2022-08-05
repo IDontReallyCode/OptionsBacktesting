@@ -56,6 +56,7 @@ class Strategy(ABC):
             2- update a model/forecast/whatever
             3- return new instructions/orders for the market if necessary
         """
-        self.data.append(dataupdate)
-        self.waitingorders = marketfeedback['waitingorders']
+        self.data = dataupdate
+        self.waitingorders = marketfeedback
+        self.accountfeedback = accountfeedback
         pass

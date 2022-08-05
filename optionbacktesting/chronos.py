@@ -29,7 +29,7 @@ class Chronos():
 
     def primingthestrategyat(self, timeindex:int):
         self.currenttimestep = timeindex
-        self.currenttime = self.chronology['datetime'].iloc[self.currenttimestep]
+        self.currenttime = str(self.chronology['datetime'].iloc[self.currenttimestep])
 
         datasofar = self.market.priming(self.currenttime)
         self.broker.priming(self.currenttime)
@@ -39,8 +39,8 @@ class Chronos():
         
     def execute(self):
         for timeindex in range(self.currenttimestep+1, self.totaltimesteps):
-            datasofar = self.market.getdatasofar(self.chronology.iloc[timeindex])
-            brokerfeedback = self.broker.stepforwardintime(self.chronology[timeindex])
+            datasofar = self.market.getdatasofar(self.chronology.iloc[timeindex].values[0])
+            brokerfeedback = self.broker.stepforwardintime(self.chronology.iloc[timeindex].values[0])
             accountfeedback = self.account.tradethis(brokerfeedback)
             strategyfeedback = self.strategy.updatedata(datasofar, brokerfeedback, accountfeedback)
             self.broker.sendorder(strategyfeedback)

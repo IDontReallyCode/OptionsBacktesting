@@ -3,15 +3,7 @@ import pandas as pd
 import datetime
 
 
-ASSET_TYPE_STOCK = 0
-ASSET_TYPE_OPTION = 1
 
-ORDER_TYPE_MARKET = 0
-ORDER_TYPE_LIMIT = 1
-ORDER_TYPE_STOP = 2
-
-BUY_LONG = 1
-SELL_SHORT = -1
 
 class Market():
     """
@@ -52,7 +44,7 @@ class Market():
             if not eachticker.tickerts.empty:
                 tickerdatasofar[index] = eachticker.tickerts[eachticker.tickerts['datetime']<self.currenttime]
             if not eachticker.optionts.empty:    
-                optiondatasofar[index] = eachticker.optionts[eachticker.optionts['datetime']<self.currenttime]
+                optiondatasofar[index] = eachticker.optionts.loc[eachticker.optionts['datetime']<self.currenttime]
 
         # [TODO] Analyse and decide whether we should return the data this way, or simply provide the currenttimestamp and have the strategy retrieve the data from the market class
         return tickerdatasofar, optiondatasofar
@@ -70,27 +62,4 @@ class Market():
         pass
 
 
-
-
-class Order():
-    """
-        This is just a glorified Dictionary
-        ## Orders
-        [FOR NOW AT LEAST]
-
-        An order will be:
-            - ticker: str
-            - asset type: {stock=0, option=1}
-            - position: {long=1, short=-1}
-            - quantity: int
-            - type: {market=0, limit=1, stop=2}
-            - triggerprice: float
-    """
-    def __init__(self, ticker, assettype:int =ASSET_TYPE_STOCK, position:int =BUY_LONG, quantity:int = 1, ordertype:int = ORDER_TYPE_MARKET, triggerprice=0) -> None:
-        self.ticker = ticker
-        self.assettype = assettype
-        self.position = position
-        self.quantity = quantity
-        self.ordertype = ordertype
-        self.triggerprice = triggerprice
 
