@@ -7,7 +7,7 @@ class Dealer():
     """
         Dealer will deal with receiving orders, holding them in a list, and executing them when possible.
     """
-    def __init__(self, marketdata:market) -> None:
+    def __init__(self, marketdata:Market) -> None:
         """
             We initialize the broker/dealer with all the data
         """

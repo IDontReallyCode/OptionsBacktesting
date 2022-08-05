@@ -16,7 +16,7 @@ class Chronos():
         
         self.chronology is the reference time schedule through which Chronos will go through and make time go by.
     """
-    def __init__(self, marketdata:market, marketbroker:dealer, clientaccount:account, clientstrategy:strategy, chronology:pd.DataFrame) -> None:
+    def __init__(self, marketdata:Market, marketbroker:Dealer, clientaccount:Account, clientstrategy:Strategy, chronology:pd.DataFrame) -> None:
         self.market = marketdata
         self.broker = marketbroker
         self.account = clientaccount
