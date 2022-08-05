@@ -2,6 +2,17 @@ import numpy as np
 import pandas as pd
 import datetime
 
+
+ASSET_TYPE_STOCK = 0
+ASSET_TYPE_OPTION = 1
+
+ORDER_TYPE_MARKET = 0
+ORDER_TYPE_LIMIT = 1
+ORDER_TYPE_STOP = 2
+
+BUY_LONG = 1
+SELL_SHORT = -1
+
 class Market():
     """
         The market class will contain the data for multiple tickers
@@ -34,7 +45,7 @@ class Market():
         """
         if newtimestamp is not None:
             self.currenttime = newtimestamp
-            
+
         tickerdatasofar = [None]*self.nbtickers
         optiondatasofar = [None]*self.nbtickers
         for index, eachticker in enumerate(self.tickerlist):
@@ -57,3 +68,29 @@ class Market():
     def resettimer(self) -> None:
         self.currenttime = 0
         pass
+
+
+
+
+class Order():
+    """
+        This is just a glorified Dictionary
+        ## Orders
+        [FOR NOW AT LEAST]
+
+        An order will be:
+            - ticker: str
+            - asset type: {stock=0, option=1}
+            - position: {long=1, short=-1}
+            - quantity: int
+            - type: {market=0, limit=1, stop=2}
+            - triggerprice: float
+    """
+    def __init__(self, ticker, assettype:int =ASSET_TYPE_STOCK, position:int =BUY_LONG, quantity:int = 1, ordertype:int = ORDER_TYPE_MARKET, triggerprice=0) -> None:
+        self.ticker = ticker
+        self.assettype = assettype
+        self.position = position
+        self.quantity = quantity
+        self.ordertype = ordertype
+        self.triggerprice = triggerprice
+
