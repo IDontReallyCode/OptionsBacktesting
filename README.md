@@ -38,3 +38,28 @@ Executing means:
    - => return new orders, if any.
 
 
+# Appendix
+
+## Data
+
+### Stock price data
+
+[for now] I assume the historical data for stocks will be of the form Open/High/Low/Close with a certain frequency (daily or x-minute data).
+
+The DataFrame "MUST" be fed with these columns
+
+["date_eod", "datetime", "open", "high", "low", "close", "volume"]
+
+Other columns can be there if you need them for strategy
+
+
+### Option chains data
+
+[for now] I  assume the historical data for options was collected from snapshots and has bid/ask data with a certian frequency.
+
+The dataFrame "MUST" be fed with these columns
+
+["date_eod", "datetime", "ticker", "pcflag", "strike", "dte", "expirationdate", "bid", "ask", "bidsize", "asksize", "openinterest", "volume"]
+
+Other columns can be there if you need them for strategy
+
