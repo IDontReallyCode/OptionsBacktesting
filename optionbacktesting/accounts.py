@@ -6,9 +6,9 @@ MARGINTYPE_NONE = 0         # No margin calculated  (In this basic mode, even wh
 # TODO MARGINTYPE_PORTFOLIO = 2    # Use a portfolio margin approach based on risk
 
 
-class account():
+class Account():
     """
-        An account will manage the wealth and the margins
+        An Account will manage the wealth and the margins
         It will also contain a list of positions
             One position is a dict = {'ticker':ticker,  'quantity':qte}
             ticker is the ticker of the stock, or the composite ticker of the option

@@ -5,7 +5,7 @@ import datetime
 DATA_TYPE_BA = 0
 DATA_TYPE_OHLC = 1
 
-class oneticker():
+class OneTicker():
     """
         oneticker will contain the time series data of a ticker and it's option chain over a specific frequency (daily or intraday)
         

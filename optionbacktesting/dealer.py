@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
-from .market import market
+from .market import Market
 
 
-class dealer():
+class Dealer():
     """
         Dealer will deal with receiving orders, holding them in a list, and executing them when possible.
     """

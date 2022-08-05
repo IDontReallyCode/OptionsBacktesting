@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
-from .dealer import dealer
-from .account import account
-from .market import market
-from .abstractstrategy import strategy
+from .dealer import Dealer
+from .accounts import Account
+from .market import Market
+from .abstractstrategy import Strategy
 
-class chronos():
+class Chronos():
     """
         chronos will take care of the chronological order and make everything run
         once initialized, you can simply "execute()" and it will run through time and back test the strategy.
@@ -22,14 +22,16 @@ class chronos():
         self.account = clientaccount
         self.strategy = clientstrategy
         self.chronology = chronology
-        self.currenttime = chronology['datetime'].iloc[0]
+        self.currenttime = self.chronology['datetime'].iloc[0]
 
 
     def primingthestrategyat(self, timeindex:int):
-        datasofar = self.market.priming(timeindex)
-        self.broker.priming(timeindex)
-        self.account.priming(timeindex)
-        self.strategy.priming(timeindex, self.market.getdatasofar())
+        self.currenttime = self.chronology['datetime'].iloc[timeindex]
+
+        datasofar = self.market.priming(self.currenttime)
+        self.broker.priming(self.currenttime)
+        self.account.priming(self.currenttime)
+        self.strategy.priming(self.currenttime, datasofar)
 
         
     def execute(self):

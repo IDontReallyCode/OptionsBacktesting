@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
     ???????????????????????
 """
 
-class strategy(ABC):
+class Strategy(ABC):
     def __init__(self) -> None:
         """
             A strategy will receive new data through a CALL from chronos.
