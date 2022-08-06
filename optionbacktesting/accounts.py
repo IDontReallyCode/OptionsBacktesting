@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from .dealer import ASSET_TYPE_STOCK, ASSET_TYPE_OPTION
 
 MARGINTYPE_NONE = 0         # No margin calculated  (In this basic mode, even when shorting a naked call, no margin is calculated)
 # TODO MARGINTYPE_TDA = 1          # Follow the guide here : https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
@@ -56,4 +57,18 @@ class Account():
         
     
     def tradethis(self, dealeraction):
+        pass
+
+
+
+
+
+
+class Position():
+    def __init__(self, ticker: str, assettype: int, quantity: int, k:float = 0, expirationdate='') -> None:
+        self.ticker = ticker
+        self.assettype = assettype
+        self.quantity = quantity
+        self.k = k
+        self.expirationdate = expirationdate
         pass

@@ -11,8 +11,14 @@ ORDER_TYPE_MARKET = 0
 ORDER_TYPE_LIMIT = 1
 ORDER_TYPE_STOP = 2
 
-BUY_LONG = 1
-SELL_SHORT = -1
+
+BUY_TO_OPEN = 1
+SELL_TO_CLOSE = 2
+SELL_TO_CLOSE_ALL = 3
+SELL_TO_OPEN = -1
+BUY_TO_CLOSE = -2
+BUY_TO_CLOSE_ALL = -3
+
 
 class Dealer():
     """
@@ -84,15 +90,16 @@ class Order():
             - type: {market=0, limit=1, stop=2}
             - triggerprice: float
     """
-    def __init__(self, void: bool=True, ticker:str = "", assettype:int = ASSET_TYPE_STOCK, position:int = BUY_LONG, quantity:int = 1, ordertype:int = ORDER_TYPE_MARKET, 
-    triggerprice:int = 0, k:float = 0, dte:int = 0) -> None:
+    def __init__(self, void: bool=True, ticker:str = "", assettype:int = ASSET_TYPE_STOCK, action:int = BUY_TO_OPEN, quantity:int = 1, 
+                 ordertype:int = ORDER_TYPE_MARKET, triggerprice:int = 0, k:float = 0, expirationdate:int = 0
+                 ) -> None:
         self.void = void
         self.ticker = ticker
         self.assettype = assettype
-        self.position = position
+        self.action = action
         self.quantity = quantity
         self.ordertype = ordertype
         self.triggerprice = triggerprice
         self.k = k
-        self.dte = dte
+        self.expirationdate = expirationdate
 

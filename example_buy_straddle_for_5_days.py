@@ -29,9 +29,14 @@ class MyStrategy(obt.abstractstrategy.Strategy):
 
     def updatedata(self, currentdatetime, dataupdate, marketfeedback, accountfeedback):
         super().updatedata(currentdatetime, dataupdate, marketfeedback, accountfeedback)
+
+        targetexpdate = ""
         if datetime.datetime.strptime(currentdatetime,"%Y-%m-%d").weekday()==0:
-            thisorder = obt.Order(void=False, ticker='CLF', assettype=obt.ASSET_TYPE_OPTION, position=obt.BUY_LONG, 
-            quantity=1, ordertype=obt.ORDER_TYPE_MARKET, k=50, dte=23)
+            thisorder = obt.Order(void=False, ticker='CLF', assettype=obt.ASSET_TYPE_OPTION, action=obt.BUY_TO_OPEN, 
+            quantity=1, ordertype=obt.ORDER_TYPE_MARKET, k=50, expirationdate=targetexpdate)
+        elif datetime.datetime.strptime(currentdatetime,"%Y-%m-%d").weekday()==0:
+            thisorder = obt.Order(void=False, ticker='CLF', assettype=obt.ASSET_TYPE_OPTION, action=obt.SELL_TO_CLOSE_ALL, 
+            quantity=0, ordertype=obt.ORDER_TYPE_MARKET, k=50, expirationdate=targetexpdate)
         else:
             thisorder= obt.Order()
         return thisorder
