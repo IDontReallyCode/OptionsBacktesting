@@ -60,7 +60,8 @@ The dataFrame "MUST" be fed with these columns
 
 ["date_eod", "datetime", "ticker", "pcflag", "k", "dte", "expirationdate", "bid", "ask", "bid_size", "ask_size", "openinterest", "volume"]
 
-
+#### *IMPORTANT*
+Data should be sorted by pcflag, k, dte
 
 
 ### All DataFrame
@@ -75,7 +76,7 @@ Other columns can be there if you need them for strategy.
 [FOR NOW AT LEAST]
 
 An order will be:
-- ticker: str
+- tickerindex: int
 - asset type: {stock=0, option=1}
 - action: {BUY to open, SELL to close, SELL to close(all), SELL to open, BUY to close, BUY to close(all) }
 - quantity: int
@@ -96,4 +97,10 @@ A position is defined by:
 - expirationdate: str/date format
 
 
+## Trades
+[FOR NOW AT LEAST]
+
+When trading options where the data has bid/ask, we always assuming the worse case scenario and BUY at ask, SELL at bid
+
+When trading stock where the data is OHLC, we trade at Open (of following candle)
 
