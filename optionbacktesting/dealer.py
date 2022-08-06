@@ -38,7 +38,8 @@ class Dealer():
         """
             This is the method through which a strategy sends an order to the dealer to execute
         """
-        self.orderlistwaiting.append(order)
+        if not order.void:
+            self.orderlistwaiting.append(order)
         pass
 
 
@@ -83,11 +84,15 @@ class Order():
             - type: {market=0, limit=1, stop=2}
             - triggerprice: float
     """
-    def __init__(self, ticker, assettype:int =ASSET_TYPE_STOCK, position:int =BUY_LONG, quantity:int = 1, ordertype:int = ORDER_TYPE_MARKET, triggerprice=0) -> None:
+    def __init__(self, void: bool=True, ticker:str = "", assettype:int = ASSET_TYPE_STOCK, position:int = BUY_LONG, quantity:int = 1, ordertype:int = ORDER_TYPE_MARKET, 
+    triggerprice:int = 0, k:float = 0, dte:int = 0) -> None:
+        self.void = void
         self.ticker = ticker
         self.assettype = assettype
         self.position = position
         self.quantity = quantity
         self.ordertype = ordertype
         self.triggerprice = triggerprice
+        self.k = k
+        self.dte = dte
 

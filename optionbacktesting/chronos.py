@@ -42,6 +42,6 @@ class Chronos():
             datasofar = self.market.getdatasofar(self.chronology.iloc[timeindex].values[0])
             brokerfeedback = self.broker.stepforwardintime(self.chronology.iloc[timeindex].values[0])
             accountfeedback = self.account.tradethis(brokerfeedback)
-            strategyfeedback = self.strategy.updatedata(datasofar, brokerfeedback, accountfeedback)
+            strategyfeedback = self.strategy.updatedata(self.chronology.iloc[timeindex].values[0], datasofar, brokerfeedback, accountfeedback)
             self.broker.sendorder(strategyfeedback)
         

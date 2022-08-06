@@ -3,6 +3,7 @@ import pandas as pd
 from abc import ABC, abstractmethod
 # from market import market
 # from account import account
+from .dealer import Order
 
 """
     ???????????????????????
@@ -48,7 +49,7 @@ class Strategy(ABC):
         pass
 
 
-    def updatedata(self, dataupdate, marketfeedback, accountfeedback):
+    def updatedata(self, currentdatetime, dataupdate, marketfeedback, accountfeedback):
         """
             This method will:
             1- update the data available
@@ -59,4 +60,5 @@ class Strategy(ABC):
         self.data = dataupdate
         self.waitingorders = marketfeedback
         self.accountfeedback = accountfeedback
-        pass
+        theseorders = Order(void=True)
+        return theseorders

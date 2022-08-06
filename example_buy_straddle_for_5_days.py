@@ -11,10 +11,13 @@
             - we sell on friday
 """
 
+from calendar import weekday
 import numpy as np
 import pandas as pd
 # from pyparsing import col
 import optionbacktesting as obt
+import datetime
+
 
 class MyStrategy(obt.abstractstrategy.Strategy):
     def __init__(self) -> None:
@@ -24,8 +27,14 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         super().priming(index, data)
         pass
 
-    def update(self, data):
-        pass
+    def updatedata(self, currentdatetime, dataupdate, marketfeedback, accountfeedback):
+        super().updatedata(currentdatetime, dataupdate, marketfeedback, accountfeedback)
+        if datetime.datetime.strptime(currentdatetime,"%Y-%m-%d").weekday()==0:
+            thisorder = obt.Order(void=False, ticker='CLF', assettype=obt.ASSET_TYPE_OPTION, position=obt.BUY_LONG, 
+            quantity=1, ordertype=obt.ORDER_TYPE_MARKET, k=50, dte=23)
+        else:
+            thisorder= obt.Order()
+        return thisorder
 
 
 def main():
