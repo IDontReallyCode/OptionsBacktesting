@@ -70,6 +70,7 @@ class Trade():
         This is just a glorified "change" in position
     """
     def __init__(self, datetime:pd.Timestamp, positionchange:Position, cost:float) -> None:
+        self.datetime = datetime
         self.positionchange = positionchange
         self.cost = cost
 
@@ -80,7 +81,7 @@ class Dealer():
     """
         Dealer will deal with receiving orders, holding them in a list, and executing them when possible.
     """
-    def __init__(self, marketdata:Market) -> None:
+    def __init__(self, marketdata:Market, optiontradingcost:float = 0.65) -> None:
         """
             We initialize the broker/dealer with all the data
         """
@@ -88,6 +89,7 @@ class Dealer():
         self.market.resettimer()
         self.orderlistwaiting = [None]
         self.orderlistexecuted = [None]
+        self.optiontradingcost = optiontradingcost
 
 
     # def priming(self, currenttime:pd.Timestamp)->int:
@@ -200,6 +202,7 @@ class Account():
         self.margin = 0
         self.positions = [None]
         self.startingtime = 0
+        self.wealthts = []
         pass
 
 
@@ -234,8 +237,12 @@ class Account():
         return self.startingtime
         
     
-    def trade(self, thistrade:list):
-        TODO account for the trade
-        pass
+    def trade(self, tradelist:list):
+        for thistrade in tradelist:
+            self.wealth += thistrade.cost
+            self.wealthts.append((thistrade.datetime, self.wealth))
+        
+        return self.wealth
+        
 
 

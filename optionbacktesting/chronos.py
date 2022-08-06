@@ -52,7 +52,10 @@ class Chronos():
         for timeindex in range(self.currenttimestep+1, self.totaltimesteps):
             self.market.timepass(self.chronology['datetime'].iloc[timeindex])
             dealerfeedback = self.dealer.gothroughorders()
-            accountfeedback = self.account.trade(dealerfeedback)
+            if dealerfeedback is not None:
+                accountfeedback = self.account.trade(dealerfeedback)
+            else:
+                accountfeedback = self.account.wealth
             strategyfeedback = self.strategy.estimatestrategy(dealerfeedback, accountfeedback)
             
             self.dealer.sendorder(strategyfeedback)
