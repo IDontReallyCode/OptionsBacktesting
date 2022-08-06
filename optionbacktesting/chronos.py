@@ -16,9 +16,9 @@ class Chronos():
         
         self.chronology is the reference time schedule through which Chronos will go through and make time go by.
     """
-    def __init__(self, marketdata:Market, marketbroker:Dealer, clientaccount:Account, clientstrategy:Strategy, chronology:pd.DataFrame) -> None:
+    def __init__(self, marketdata:Market, marketdealer:Dealer, clientaccount:Account, clientstrategy:Strategy, chronology:pd.DataFrame) -> None:
         self.market = marketdata
-        self.broker = marketbroker
+        self.dealer = marketdealer
         self.account = clientaccount
         self.strategy = clientstrategy
         self.chronology = chronology
@@ -43,7 +43,7 @@ class Chronos():
         self.currentdatetime = self.chronology['datetime'].iloc[self.currenttimestep]
 
         self.market.priming(self.currentdatetime)
-        self.broker.priming(self.currentdatetime)
+        # self.dealer.priming(self.currentdatetime)
         self.account.priming(self.currentdatetime)
         self.strategy.priming(self.market)
 
@@ -51,9 +51,9 @@ class Chronos():
     def execute(self):
         for timeindex in range(self.currenttimestep+1, self.totaltimesteps):
             self.market.timepass(self.chronology['datetime'].iloc[timeindex])
-            brokerfeedback = self.broker.stepforwardintime(self.chronology.iloc[timeindex].values[0])
-            accountfeedback = self.account.stepforwardintime(self.chronology.iloc[timeindex].values[0], brokerfeedback)
-            strategyfeedback = self.strategy.estimatestrategy(brokerfeedback, accountfeedback)
+            dealerfeedback = self.dealer.gothroughorders()
+            accountfeedback = self.account.trade(dealerfeedback)
+            strategyfeedback = self.strategy.estimatestrategy(dealerfeedback, accountfeedback)
             
-            self.broker.sendorder(strategyfeedback)
+            self.dealer.sendorder(strategyfeedback)
         

@@ -23,104 +23,6 @@ MARGINTYPE_NONE = 0         # No margin calculated  (In this basic mode, even wh
 # TODO MARGINTYPE_PORTFOLIO = 2    # Use a portfolio margin approach based on risk
 
 
-class Dealer():
-    """
-        Dealer will deal with receiving orders, holding them in a list, and executing them when possible.
-    """
-    def __init__(self, marketdata:Market) -> None:
-        """
-            We initialize the broker/dealer with all the data
-        """
-        self.market = marketdata
-        self.market.resettimer()
-        self.currentdatetime = None
-        self.orderlistwaiting = [None]
-        self.orderlistexecuted = [None]
-
-
-    def priming(self, currenttime:pd.Timestamp)->int:
-        self.currentdatetime = currenttime
-        return self.currentdatetime
-        
-
-    def sendorder(self, orderlist:list):
-        """
-            This is the method through which a strategy sends an order to the dealer to execute
-        """
-        for eachorder in orderlist:
-            if not eachorder.void:
-                if self.orderlistwaiting[0] is None:
-                    self.orderlistwaiting[0] = eachorder
-                else:
-                    self.orderlistwaiting.append(eachorder)
-
-        alltrades = []
-
-        for thisorder in self.orderlistwaiting:
-            if thisorder.action==BUY_TO_OPEN:
-                if thisorder.assettype==ASSET_TYPE_OPTION:
-                    if thisorder.ordertype==ORDER_TYPE_MARKET:
-                        optionchain = self.market.tickerlist[thisorder.tickerindex].getoptionsnapshot()
-                        thisoption = optionchain[(optionchain['pcflag']==thisorder.pcflag) 
-                                                & (optionchain['k']==thisorder.k) 
-                                                & (optionchain['expirationdate']==thisorder.expirationdate)]
-                        tradeprice = thisoption['ask'].iloc[0]
-                        totalcost = tradeprice*thisorder.quantity
-                        positionchange = Position(tickerindex=thisorder.tickerindex, assettype=thisorder.assettype, quantity=thisorder.quantity,
-                                                    pcflag = thisorder.pcflag, k=thisorder.k, expirationdate=thisorder.expirationdate)
-                        alltrades.append(Trade(positionchange, totalcost))
-                        
-                elif thisorder.assettype==ASSET_TYPE_STOCK:
-                    pass
-                else:
-                    print("What in the actual ?")
-                    pass
-                
-            elif thisorder.action==BUY_TO_CLOSE:
-                pass
-
-            elif thisorder.action==BUY_TO_CLOSE_ALL:
-                pass
-
-            elif thisorder.action==SELL_TO_OPEN:
-                pass
-
-            elif thisorder.action==SELL_TO_CLOSE:
-                pass
-
-            elif thisorder.action==SELL_TO_CLOSE_ALL:
-                pass
-
-
-            return alltrades
-            # pass
-
-
-    def stepforwardintime(self, newtimestep):
-        """
-            Step forward in time will get the lastest candle-bar, then go through the list of order_waiting and see whether any can be executed.
-        """
-        # self.currentcandlebar = self.market.getnewbar()
-        # self.gothroughorders()
-        pass
-
-
-    def gothroughorders(self):
-        """
-            Takes the list of 
-        """
-        for order in self.orderlistwaiting:
-            self.checkorder(order)
-
-
-    def checkorder(self, order):
-        """
-            Tries to execute the order within the current candle data
-        """
-        pass
-    
-
-
 
 
 class Order():
@@ -152,7 +54,6 @@ class Order():
         self.expirationdate = expirationdate
 
 
-
 class Position():
     def __init__(self, tickerindex: int, assettype: int, quantity: int, pcflag:int = 1, k:float = 0, expirationdate='') -> None:
         self.tickerindex = tickerindex
@@ -163,14 +64,123 @@ class Position():
         self.expirationdate = expirationdate
         pass
 
-    
+
 class Trade():
     """
         This is just a glorified "change" in position
     """
-    def __init__(self, positionchange:Position, cost:float) -> None:
+    def __init__(self, datetime:pd.Timestamp, positionchange:Position, cost:float) -> None:
         self.positionchange = positionchange
         self.cost = cost
+
+
+
+
+class Dealer():
+    """
+        Dealer will deal with receiving orders, holding them in a list, and executing them when possible.
+    """
+    def __init__(self, marketdata:Market) -> None:
+        """
+            We initialize the broker/dealer with all the data
+        """
+        self.market = marketdata
+        self.market.resettimer()
+        self.orderlistwaiting = [None]
+        self.orderlistexecuted = [None]
+
+
+    # def priming(self, currenttime:pd.Timestamp)->int:
+    #     self.currentdatetime = currenttime
+    #     return self.currentdatetime
+        
+
+    def sendorder(self, orderlist:list):
+        """
+            This is the method through which a strategy sends an order to the dealer to execute
+        """
+        for eachorder in orderlist:
+            if not eachorder.void:
+                if self.orderlistwaiting[0] is None:
+                    self.orderlistwaiting[0] = eachorder
+                else:
+                    self.orderlistwaiting.append(eachorder)
+
+
+            # pass
+
+
+    # def stepforwardintime(self):
+    #     """
+    #         Step forward in time will get the lastest candle-bar, then go through the list of order_waiting and see whether any can be executed.
+    #     """
+
+    #     alltrades = []
+
+    #     for thisorder in self.orderlistwaiting:
+            
+
+    #     return alltrades        
+    #     # pass
+
+
+    def gothroughorders(self):
+        """
+            Takes the list of 
+        """
+        alltrades = []
+        if self.orderlistwaiting[0] is not None:
+            for order in self.orderlistwaiting:
+                trade = self.checkorder(order)
+                if trade is not None:
+                    alltrades.append(trade)
+            
+            return alltrades
+        else:
+            return None
+
+
+    def checkorder(self, thisorder):
+        """
+            Tries to execute the order within the current candle data
+        """
+        trade = None
+        if thisorder.action==BUY_TO_OPEN:
+            if thisorder.assettype==ASSET_TYPE_OPTION:
+                if thisorder.ordertype==ORDER_TYPE_MARKET:
+                    optionchain = self.market.tickerlist[thisorder.tickerindex].getoptionsnapshot()
+                    thisoption = optionchain[(optionchain['pcflag']==thisorder.pcflag) 
+                                            & (optionchain['k']==thisorder.k) 
+                                            & (optionchain['expirationdate']==thisorder.expirationdate)]
+                    tradeprice = thisoption['ask'].iloc[0]
+                    totalcost = tradeprice*thisorder.quantity
+                    positionchange = Position(tickerindex=thisorder.tickerindex, assettype=thisorder.assettype, quantity=thisorder.quantity,
+                                                pcflag = thisorder.pcflag, k=thisorder.k, expirationdate=thisorder.expirationdate)
+                    trade = Trade(self.market.currentdatetime, positionchange, totalcost)
+                    
+            elif thisorder.assettype==ASSET_TYPE_STOCK:
+                pass
+            else:
+                print("What in the actual ?")
+                pass
+            
+        elif thisorder.action==BUY_TO_CLOSE:
+            pass
+
+        elif thisorder.action==BUY_TO_CLOSE_ALL:
+            pass
+
+        elif thisorder.action==SELL_TO_OPEN:
+            pass
+
+        elif thisorder.action==SELL_TO_CLOSE:
+            pass
+
+        elif thisorder.action==SELL_TO_CLOSE_ALL:
+            pass
+
+        return trade
+    
 
 
 
@@ -224,8 +234,8 @@ class Account():
         return self.startingtime
         
     
-    def stepforwardintime(self, currentdatetime:pd.Timestamp, dealeraction=None):
-
+    def trade(self, thistrade:list):
+        TODO account for the trade
         pass
 
 

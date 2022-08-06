@@ -62,7 +62,7 @@ def main():
     mymarket = obt.Market((tickerCLF, tickerCLF2),('TIC0', 'TIC1'))
     mydealer = obt.Dealer(marketdata=mymarket)
     mystrategy = MyStrategy()
-    mychronos = obt.Chronos(marketdata=mymarket, marketbroker=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
+    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
 
     mychronos.primingthestrategyat(10)
 
