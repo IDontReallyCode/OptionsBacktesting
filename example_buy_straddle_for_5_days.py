@@ -51,7 +51,7 @@ def main():
     uniquedaydates = pd.DataFrame(sampledata['date_eod'].unique(), columns=['datetime'])
 
     tickerCLF = obt.OneTicker(tickername='CLF', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
-    tickerCLF2 = obt.OneTicker(tickername='CLF', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
+    tickerCLF2 = obt.OneTicker(tickername='CLF2', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
     
     mymarket = obt.Market((tickerCLF, tickerCLF2),('CLF', 'CLF2'))
     mydealer = obt.Dealer(marketdata=mymarket)
