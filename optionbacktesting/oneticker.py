@@ -25,15 +25,19 @@ class OneTicker():
         self.tickertype = tickerdatatype
         self.optionts = optionchaintimeseries
         self.optiontype = optiondatatype
-        self.currenttime = 0
+        self.currentdatetime = 0
 
     
     def resettimer(self) -> None:
         """
             [TODO] Figure out the best way to initialize this
         """
-        self.currenttime=0
+        self.currentdatetime=0
 
+
+    def settime(self, currentdatetime):
+        self.currentdatetime = currentdatetime
+        
 
     def getdatapriorto(self, uptotimestamp:datetime):
         stockdata = self.tickerts[self.tickerts["datetime"]<uptotimestamp]

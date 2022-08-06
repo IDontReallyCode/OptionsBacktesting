@@ -23,8 +23,8 @@ class MyStrategy(obt.abstractstrategy.Strategy):
     def __init__(self) -> None:
         super().__init__()
 
-    def priming(self, index, data):
-        super().priming(index, data)
+    def priming(self, market):
+        super().priming(market)
         pass
 
     def updatedata(self, currentdatetime, dataupdate, marketfeedback, accountfeedback):

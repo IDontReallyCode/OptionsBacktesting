@@ -15,6 +15,8 @@ class Market():
         if not len(tickerlist) == len(tickernames):
             print("WTF is wrong with you")
             pass
+        self.tickernames = tickernames
+        self.tickerlist = tickerlist
         for index, eachtick in enumerate(tickernames):
             setattr(self, eachtick, tickerlist[index])
 
@@ -28,6 +30,8 @@ class Market():
                 get the data up to the timeindex and return that
         """
         self.currenttime = currenttimestamp
+        for index, eachtick in enumerate(self.tickernames):
+            self.tickerlist[index].settime(currenttimestamp)
 
         return self.currenttime
 
