@@ -50,9 +50,9 @@ class Chronos():
         
     def execute(self):
         for timeindex in range(self.currenttimestep+1, self.totaltimesteps):
-            datasofar = self.market.getdatasofar(self.chronology.iloc[timeindex].values[0])
+            self.market.timepass(self.chronology.iloc[timeindex].values[0])
             brokerfeedback = self.broker.stepforwardintime(self.chronology.iloc[timeindex].values[0])
             accountfeedback = self.account.tradethis(brokerfeedback)
-            strategyfeedback = self.strategy.updatedata(self.chronology.iloc[timeindex].values[0], datasofar, brokerfeedback, accountfeedback)
+            strategyfeedback = self.strategy.estimatestrategy(brokerfeedback, accountfeedback)
             self.broker.sendorder(strategyfeedback)
         

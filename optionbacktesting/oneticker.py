@@ -21,9 +21,9 @@ class OneTicker():
             See Readme.md for details on the data format
         """
         self.ticker = tickername
-        self.tickerts = tickertimeseries
+        self._tickerts = tickertimeseries
         self.tickertype = tickerdatatype
-        self.optionts = optionchaintimeseries
+        self._optionts = optionchaintimeseries
         self.optiontype = optiondatatype
         self.currentdatetime = 0
 
@@ -37,8 +37,16 @@ class OneTicker():
 
     def settime(self, currentdatetime):
         self.currentdatetime = currentdatetime
-        
 
-    def getdatapriorto(self, uptotimestamp:datetime):
-        stockdata = self.tickerts[self.tickerts["datetime"]<uptotimestamp]
-        optiondata = self.optionts[self.optionts["datetime"]<uptotimestamp]
+
+    # def getdatapriorto(self, uptotimestamp:datetime):
+    #     stockdata = self.tickerts[self.tickerts["datetime"]<uptotimestamp]
+    #     optiondata = self.optionts[self.optionts["datetime"]<uptotimestamp]
+
+    def gettickerdata(self):
+        return self._tickerts[self._tickerts["datetime"]<=self.currentdatetime]
+
+    def getoptiondata(self):
+        return self._optionts[self._optionts["datetime"]<=self.currentdatetime]
+
+

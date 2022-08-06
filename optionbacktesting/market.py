@@ -27,7 +27,7 @@ class Market():
         for index, eachtick in enumerate(tickernames):
             setattr(self, eachtick, tickerlist[index])
 
-        self.currenttime = 0
+        self.currentdatetime = 0
 
 
     def priming(self, currenttimestamp:datetime):
@@ -36,11 +36,11 @@ class Market():
             for each ticker in the tickerlist
                 get the data up to the timeindex and return that
         """
-        self.currenttime = currenttimestamp
+        self.currentdatetime = currenttimestamp
         for index, eachtick in enumerate(self.tickernames):
             self.tickerlist[index].settime(currenttimestamp)
 
-        return self.currenttime
+        return self.currentdatetime
 
 
     def getdatasofar(self, newtimestamp = None)->pd.DataFrame:
@@ -48,15 +48,15 @@ class Market():
             Returns all the data that is in the past
         """
         # if newtimestamp is not None:
-        #     self.currenttime = newtimestamp
+        #     self.currentdatetime = newtimestamp
 
         # tickerdatasofar = [None]*self.nbtickers
         # optiondatasofar = [None]*self.nbtickers
         # for index, eachticker in enumerate(self.tickerlist):
         #     if not eachticker.tickerts.empty:
-        #         tickerdatasofar[index] = eachticker.tickerts[eachticker.tickerts['datetime']<self.currenttime]
+        #         tickerdatasofar[index] = eachticker.tickerts[eachticker.tickerts['datetime']<self.currentdatetime]
         #     if not eachticker.optionts.empty:    
-        #         optiondatasofar[index] = eachticker.optionts.loc[eachticker.optionts['datetime']<self.currenttime]
+        #         optiondatasofar[index] = eachticker.optionts.loc[eachticker.optionts['datetime']<self.currentdatetime]
 
         # # [TODO] Analyse and decide whether we should return the data this way, or simply provide the currenttimestamp and have the strategy retrieve the data from the market class
         # return tickerdatasofar, optiondatasofar
@@ -67,14 +67,14 @@ class Market():
         """
             Will get the next timestep data from each ticker and return a list with the data
         """
-        self.currenttime = currentdatetime
+        self.currentdatetime = currentdatetime
 
-        return self.currenttime
+        return self.currentdatetime
 
 
 
     def resettimer(self) -> None:
-        self.currenttime = 0
+        self.currentdatetime = 0
         pass
 
 

@@ -27,14 +27,16 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         super().priming(market)
         pass
 
-    def updatedata(self, currentdatetime, dataupdate, marketfeedback, accountfeedback):
-        super().updatedata(currentdatetime, dataupdate, marketfeedback, accountfeedback)
+    def estimatestrategy(self, marketfeedback, accountfeedback):
+        super().estimatestrategy(marketfeedback, accountfeedback)
+
+        # self.marketdata.currentdatetime
 
         targetexpdate = ""
-        if datetime.datetime.strptime(currentdatetime,"%Y-%m-%d").weekday()==0:
+        if datetime.datetime.strptime(self.marketdata.currentdatetime,"%Y-%m-%d").weekday()==0:
             thisorder = obt.Order(void=False, ticker='CLF', assettype=obt.ASSET_TYPE_OPTION, action=obt.BUY_TO_OPEN, 
             quantity=1, ordertype=obt.ORDER_TYPE_MARKET, k=50, expirationdate=targetexpdate)
-        elif datetime.datetime.strptime(currentdatetime,"%Y-%m-%d").weekday()==0:
+        elif datetime.datetime.strptime(self.marketdata.currentdatetime,"%Y-%m-%d").weekday()==0:
             thisorder = obt.Order(void=False, ticker='CLF', assettype=obt.ASSET_TYPE_OPTION, action=obt.SELL_TO_CLOSE_ALL, 
             quantity=0, ordertype=obt.ORDER_TYPE_MARKET, k=50, expirationdate=targetexpdate)
         else:
