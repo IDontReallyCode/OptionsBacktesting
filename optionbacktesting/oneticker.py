@@ -9,9 +9,9 @@ class OneTicker():
     """
         oneticker will contain the time series data of a ticker and it's option chain over a specific frequency (daily or intraday)
         
-        pd.ticker columns ["date_eod", "timestamp", "open", "high", "low", "close", "volume"]
+        pd.ticker columns ["date_eod", "datetime", "open", "high", "low", "close", "volume"]
 
-        pd.opions columns ["date_eod", "timestamp", "]
+        pd.opions columns ["date_eod", "datetime", "ticker", "pcflag", "k", "dte", "expirationdate", "bid", "ask", "bid_size", "ask_size", "openinterest", "volume"]
     """
     def __init__(self, tickername:str, tickertimeseries:pd.DataFrame, optionchaintimeseries:pd.DataFrame, tickerdatatype:int = DATA_TYPE_OHLC, optiondatatype:int = DATA_TYPE_BA) -> None:
         """
@@ -28,13 +28,6 @@ class OneTicker():
         self.currenttime = 0
 
     
-    # def getnewbar(self) -> dict:
-    #     """
-    #         returns the next candle bar
-    #     """
-    #     self.currenttime+=1
-
-
     def resettimer(self) -> None:
         """
             [TODO] Figure out the best way to initialize this

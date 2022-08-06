@@ -50,8 +50,10 @@ def main():
     sampledata.rename(columns={'oi':'openinterest', 'date_mat':'expirationdate'}, inplace=True)
     uniquedaydates = pd.DataFrame(sampledata['date_eod'].unique(), columns=['datetime'])
 
-    tickeraapl = obt.OneTicker(tickername='AAPL', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
-    mymarket = obt.Market([tickeraapl])
+    tickerCLF = obt.OneTicker(tickername='CLF', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
+    tickerCLF2 = obt.OneTicker(tickername='CLF', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
+    
+    mymarket = obt.Market((tickerCLF, tickerCLF2),('CLF', 'CLF2'))
     mydealer = obt.Dealer(marketdata=mymarket)
     mystrategy = MyStrategy()
     mychronos = obt.Chronos(marketdata=mymarket, marketbroker=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)

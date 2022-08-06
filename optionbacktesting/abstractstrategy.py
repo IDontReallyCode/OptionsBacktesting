@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
-# from market import market
+from .market import Market
 # from account import account
 from .dealer import Order
 
@@ -24,32 +24,25 @@ class Strategy(ABC):
         super().__init__()
 
 
-    def priming(self, index, currentdata):
+    def priming(self, marketdata:Market):
         """
             Here, the strategy receives the initial set of data which the strategy can use to estimate a model, 
             or whatever it need to start spitting out trading signals
         """
-        self.data = currentdata
-        self.timeindex = index
+        self.marketdata = marketdata
         self.estimatestrategy()
 
 
     def estimatestrategy(self):
         """
             This is where the magic happens
+
+            You access the currently available data from the market by asking self.marketdata
         """
-
-
-        # example:
-        # if weekday(currentday)==Monday:
-        #     signal = SIGNAL_FULL_BUY
-        # elif weekday(currentday)==Friday:
-        #     signal = SIGNAL_FULL_SELL
-
         pass
 
 
-    def updatedata(self, currentdatetime, dataupdate, marketfeedback, accountfeedback):
+    def updatedata(self, marketfeedback, accountfeedback):
         """
             This method will:
             1- update the data available
@@ -57,7 +50,6 @@ class Strategy(ABC):
             2- update a model/forecast/whatever
             3- return new instructions/orders for the market if necessary
         """
-        self.data = dataupdate
         self.waitingorders = marketfeedback
         self.accountfeedback = accountfeedback
         theseorders = Order(void=True)

@@ -28,13 +28,24 @@ class Chronos():
 
 
     def primingthestrategyat(self, timeindex:int):
+        """
+            Priming the Back Testing Entire System:
+
+            The user needs to know the index winthin the chronology vector, where we start. IT could be at time zero, 
+            but it could be later, if we need data to estimate a model prior to start trading.
+
+
+            Priming the Market:
+
+            Priming the Market simply means setting the "currentdatatime" so the market knows what data is available so far.
+        """
         self.currenttimestep = timeindex
         self.currenttime = str(self.chronology['datetime'].iloc[self.currenttimestep])
 
-        datasofar = self.market.priming(self.currenttime)
+        self.market.priming(self.currenttime)
         self.broker.priming(self.currenttime)
         self.account.priming(self.currenttime)
-        self.strategy.priming(self.currenttime, datasofar)
+        self.strategy.priming(self.market)
 
         
     def execute(self):
