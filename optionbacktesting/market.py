@@ -11,6 +11,13 @@ class Market():
     def __init__(self, tickerlist:list, tickernames:list) -> None:
         """
             After loading the data of one or more tickers (including the option chains), we "package" then toghether into one object that we call "market"
+
+            Suppose you have Data for QQQ and TQQQ (in that order)
+
+            You can access the data using self.QQQ, or self.tickerlist[0]
+
+            Internally, self.tickerlist[0] will be used.
+            However, the user, when creating their Strategy class/object, they will be able to access the data using the ticker name directly
         """
         if not len(tickerlist) == len(tickernames):
             print("WTF is wrong with you")
