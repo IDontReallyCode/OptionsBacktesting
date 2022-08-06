@@ -71,3 +71,29 @@ Other columns can be there if you need them for strategy.
 
 
 
+## Orders
+[FOR NOW AT LEAST]
+
+An order will be:
+- ticker: str
+- asset type: {stock=0, option=1}
+- action: {BUY to open, SELL to close, SELL to close(all), SELL to open, BUY to close, BUY to close(all) }
+- quantity: int
+- type: {market=0, limit=1, stop=2}
+- triggerprice: float
+- k: float
+- expirationdate: str/date format
+
+
+## Positions
+[FOR NOW AT LEAST]
+
+A position is defined by:
+- ticker: str
+- asset type: {stock=0, option=1}
+- quantity: int {+ for long, - for short}
+- k: float
+- expirationdate: str/date format
+
+
+
