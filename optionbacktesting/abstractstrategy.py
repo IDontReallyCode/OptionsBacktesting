@@ -16,8 +16,6 @@ class Strategy(ABC):
         """
             A strategy will receive new data through a CALL from chronos.
         """
-        self.data = pd.DataFrame([None])
-        self.timeindex = 0
         self.outgoingorders = [None]
         self.waitingorders = [None]
 
@@ -56,7 +54,7 @@ class Strategy(ABC):
         """
         self.waitingorders = marketfeedback
         self.accountfeedback = accountfeedback
-        theseorders = Order(void=True)
+        theseorders = [Order(void=True)]
         return theseorders
         # pass
 

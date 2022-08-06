@@ -54,5 +54,6 @@ class Chronos():
             brokerfeedback = self.broker.stepforwardintime(self.chronology.iloc[timeindex].values[0])
             accountfeedback = self.account.tradethis(brokerfeedback)
             strategyfeedback = self.strategy.estimatestrategy(brokerfeedback, accountfeedback)
+            
             self.broker.sendorder(strategyfeedback)
         

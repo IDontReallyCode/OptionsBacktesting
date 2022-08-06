@@ -32,16 +32,18 @@ class MyStrategy(obt.abstractstrategy.Strategy):
 
         # self.marketdata.currentdatetime
 
+        optionsnapshot = self.marketdata.TIC0.getoptionsnapshot()
+
         targetexpdate = ""
         if datetime.datetime.strptime(self.marketdata.currentdatetime,"%Y-%m-%d").weekday()==0:
-            thisorder = obt.Order(void=False, ticker='CLF', assettype=obt.ASSET_TYPE_OPTION, action=obt.BUY_TO_OPEN, 
+            thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.BUY_TO_OPEN, 
             quantity=1, ordertype=obt.ORDER_TYPE_MARKET, k=50, expirationdate=targetexpdate)
         elif datetime.datetime.strptime(self.marketdata.currentdatetime,"%Y-%m-%d").weekday()==0:
-            thisorder = obt.Order(void=False, ticker='CLF', assettype=obt.ASSET_TYPE_OPTION, action=obt.SELL_TO_CLOSE_ALL, 
+            thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.SELL_TO_CLOSE_ALL, 
             quantity=0, ordertype=obt.ORDER_TYPE_MARKET, k=50, expirationdate=targetexpdate)
         else:
-            thisorder= obt.Order()
-        return thisorder
+            thisorder = obt.Order(void=True)
+        return [thisorder]
 
 
 def main():
@@ -55,7 +57,7 @@ def main():
     tickerCLF = obt.OneTicker(tickername='CLF', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
     tickerCLF2 = obt.OneTicker(tickername='CLF2', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
     
-    mymarket = obt.Market((tickerCLF, tickerCLF2),('CLF', 'CLF2'))
+    mymarket = obt.Market((tickerCLF, tickerCLF2),('TIC0', 'TIC1'))
     mydealer = obt.Dealer(marketdata=mymarket)
     mystrategy = MyStrategy()
     mychronos = obt.Chronos(marketdata=mymarket, marketbroker=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)

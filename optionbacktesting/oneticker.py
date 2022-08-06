@@ -46,7 +46,11 @@ class OneTicker():
     def gettickerdata(self):
         return self._tickerts[self._tickerts["datetime"]<=self.currentdatetime]
 
+
     def getoptiondata(self):
         return self._optionts[self._optionts["datetime"]<=self.currentdatetime]
 
 
+    def getoptionsnapshot(self):
+        thisday = str(datetime.datetime(self.currentdatetime).date())
+        return self._optionts[self._optionts["date_eod"]==thisday]

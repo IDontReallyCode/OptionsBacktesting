@@ -40,13 +40,16 @@ class Dealer():
         return self.currenttime
         
 
-    def sendorder(self, order):
+    def sendorder(self, orderlist:list):
         """
             This is the method through which a strategy sends an order to the dealer to execute
         """
-        if not order.void:
-            self.orderlistwaiting.append(order)
-        pass
+        for eachorder in orderlist:
+            if not eachorder.void:
+                self.orderlistwaiting.append(eachorder)
+
+        for earchwaitingorder in self.orderlistwaiting:
+            pass
 
 
     def stepforwardintime(self, newtimestep):
@@ -90,11 +93,11 @@ class Order():
             - type: {market=0, limit=1, stop=2}
             - triggerprice: float
     """
-    def __init__(self, void: bool=True, ticker:str = "", assettype:int = ASSET_TYPE_STOCK, action:int = BUY_TO_OPEN, quantity:int = 1, 
+    def __init__(self, void: bool=True, tickerindex:int = 0, assettype:int = ASSET_TYPE_STOCK, action:int = BUY_TO_OPEN, quantity:int = 1, 
                  ordertype:int = ORDER_TYPE_MARKET, triggerprice:int = 0, k:float = 0, expirationdate:int = 0
                  ) -> None:
         self.void = void
-        self.ticker = ticker
+        self.tickerindex = tickerindex
         self.assettype = assettype
         self.action = action
         self.quantity = quantity
