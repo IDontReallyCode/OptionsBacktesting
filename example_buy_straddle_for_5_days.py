@@ -38,10 +38,10 @@ class MyStrategy(obt.abstractstrategy.Strategy):
 
         if self.marketdata.currentdatetime.weekday()==0:
             thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.BUY_TO_OPEN, 
-            quantity=1, ordertype=obt.ORDER_TYPE_MARKET, k=35, expirationdate=targetexpdate)
+            quantity=1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=1, k=35, expirationdate=targetexpdate)
         elif self.marketdata.currentdatetime.weekday()==4:
             thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.SELL_TO_CLOSE_ALL, 
-            quantity=0, ordertype=obt.ORDER_TYPE_MARKET, k=0, expirationdate='')
+            quantity=0, ordertype=obt.ORDER_TYPE_MARKET, pcflag=1, k=0, expirationdate='')
         else:
             thisorder = obt.Order(void=True)
         return [thisorder]

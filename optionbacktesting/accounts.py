@@ -1,74 +1,76 @@
-import numpy as np
-import pandas as pd
-from .dealer import ASSET_TYPE_STOCK, ASSET_TYPE_OPTION
+# import numpy as np
+# import pandas as pd
+# from .broker import ASSET_TYPE_STOCK, ASSET_TYPE_OPTION
 
-MARGINTYPE_NONE = 0         # No margin calculated  (In this basic mode, even when shorting a naked call, no margin is calculated)
-# TODO MARGINTYPE_TDA = 1          # Follow the guide here : https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
-# TODO MARGINTYPE_PORTFOLIO = 2    # Use a portfolio margin approach based on risk
-
-
-class Account():
-    """
-        An Account will manage the wealth and the margins
-        It will also contain a list of positions
-            One position is a dict = {'ticker':ticker,  'quantity':qte}
-            ticker is the ticker of the stock, or the composite ticker of the option
-            quantity can be positive of negative for long and short positions
-    """
-
-    def __init__(self, deposit:float, margintype:int = MARGINTYPE_NONE) -> None:
-        self._wealth = deposit
-        self.margintype = margintype
-        self.margin = 0
-        self.positions = [None]
-        self.startingtime = 0
-        pass
+# MARGINTYPE_NONE = 0         # No margin calculated  (In this basic mode, even when shorting a naked call, no margin is calculated)
+# # TODO MARGINTYPE_TDA = 1          # Follow the guide here : https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
+# # TODO MARGINTYPE_PORTFOLIO = 2    # Use a portfolio margin approach based on risk
 
 
-    @property
-    def wealth(self):
-        return self._wealth
+# class Account():
+#     """
+#         An Account will manage the wealth and the margins
+#         It will also contain a list of positions
+#             One position is a dict = {'ticker':ticker,  'quantity':qte}
+#             ticker is the ticker of the stock, or the composite ticker of the option
+#             quantity can be positive of negative for long and short positions
+#     """
+
+#     def __init__(self, deposit:float, margintype:int = MARGINTYPE_NONE) -> None:
+#         self._wealth = deposit
+#         self.margintype = margintype
+#         self.margin = 0
+#         self.positions = [None]
+#         self.startingtime = 0
+#         pass
+
+
+#     @property
+#     def wealth(self):
+#         return self._wealth
 
     
-    @wealth.setter
-    def wealth(self, value):
-        self._wealth = value
+#     @wealth.setter
+#     def wealth(self, value):
+#         self._wealth = value
 
 
-    def capitalavailable(self) -> float:
-        """
-            Simply return how much money is available for a trade
-        """
-        return self.wealth - self.margin
+#     def capitalavailable(self) -> float:
+#         """
+#             Simply return how much money is available for a trade
+#         """
+#         return self.wealth - self.margin
 
 
-    def margincostoftrade(self, tradedetails:dict)-> float:
-        """
-            Since this class will have what it takes to deal with margins, the methods to know the margin of a trade will be right in here.
-        """
-        if self.margintype==0:
-            return 0.0
-        pass
+#     def margincostoftrade(self, tradedetails:dict)-> float:
+#         """
+#             Since this class will have what it takes to deal with margins, the methods to know the margin of a trade will be right in here.
+#         """
+#         if self.margintype==0:
+#             return 0.0
+#         pass
 
 
-    def priming(self, currenttime:int):
-        self.startingtime = currenttime
-        return self.startingtime
+#     def priming(self, currentdatetime:pd.Timestamp):
+#         self.startingtime = currentdatetime
+#         return self.startingtime
         
     
-    def tradethis(self, dealeraction):
-        pass
+#     def stepforwardintime(self, currentdatetime:pd.Timestamp, dealeraction=None):
+
+#         pass
 
 
 
 
 
 
-class Position():
-    def __init__(self, ticker: str, assettype: int, quantity: int, k:float = 0, expirationdate='') -> None:
-        self.ticker = ticker
-        self.assettype = assettype
-        self.quantity = quantity
-        self.k = k
-        self.expirationdate = expirationdate
-        pass
+# class Position():
+#     def __init__(self, tickerindex: int, assettype: int, quantity: int, pcflag:int = 1, k:float = 0, expirationdate='') -> None:
+#         self.tickerindex = tickerindex
+#         self.assettype = assettype
+#         self.quantity = quantity
+#         self.pcflag = pcflag
+#         self.k = k
+#         self.expirationdate = expirationdate
+#         pass

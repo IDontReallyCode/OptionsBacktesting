@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from .dealer import Dealer
-from .accounts import Account
+from .broker import Dealer, Account
+# from .accounts import Account
 from .market import Market
 from .abstractstrategy import Strategy
 
@@ -52,7 +52,7 @@ class Chronos():
         for timeindex in range(self.currenttimestep+1, self.totaltimesteps):
             self.market.timepass(self.chronology['datetime'].iloc[timeindex])
             brokerfeedback = self.broker.stepforwardintime(self.chronology.iloc[timeindex].values[0])
-            accountfeedback = self.account.tradethis(brokerfeedback)
+            accountfeedback = self.account.stepforwardintime(self.chronology.iloc[timeindex].values[0], brokerfeedback)
             strategyfeedback = self.strategy.estimatestrategy(brokerfeedback, accountfeedback)
             
             self.broker.sendorder(strategyfeedback)
