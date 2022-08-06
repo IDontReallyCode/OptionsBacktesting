@@ -25,7 +25,7 @@ class OneTicker():
         self.tickertype = tickerdatatype
         self._optionts = optionchaintimeseries
         self.optiontype = optiondatatype
-        self.currentdatetime = 0
+        self.currentdatetime = pd.Timestamp
 
     
     def resettimer(self) -> None:
@@ -52,5 +52,5 @@ class OneTicker():
 
 
     def getoptionsnapshot(self):
-        thisday = str(datetime.datetime(self.currentdatetime).date())
+        thisday = str(self.currentdatetime.date())
         return self._optionts[self._optionts["date_eod"]==thisday]

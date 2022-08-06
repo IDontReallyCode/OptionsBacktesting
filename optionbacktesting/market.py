@@ -27,10 +27,10 @@ class Market():
         for index, eachtick in enumerate(tickernames):
             setattr(self, eachtick, tickerlist[index])
 
-        self.currentdatetime = 0
+        self.currentdatetime = None
 
 
-    def priming(self, currenttimestamp:datetime):
+    def priming(self, currenttimestamp:pd.Timestamp):
         """
             time step to which we jump because that data was used to initialize the strategy
             for each ticker in the tickerlist
@@ -63,7 +63,7 @@ class Market():
         pass
 
 
-    def timepass(self, currentdatetime) -> list:
+    def timepass(self, currentdatetime:pd.Timestamp) -> list:
         """
             Will get the next timestep data from each ticker and return a list with the data
         """
@@ -74,7 +74,7 @@ class Market():
 
 
     def resettimer(self) -> None:
-        self.currentdatetime = 0
+        self.currentdatetime = datetime.datetime.today()
         pass
 
 

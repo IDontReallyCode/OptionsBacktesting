@@ -33,14 +33,15 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         # self.marketdata.currentdatetime
 
         optionsnapshot = self.marketdata.TIC0.getoptionsnapshot()
+        # we want to trade 14+ dte option
+        targetexpdate = optionsnapshot[(optionsnapshot['dte']>=14) & (optionsnapshot['pcflag']==1)].iloc[0]['expirationdate']
 
-        targetexpdate = ""
-        if datetime.datetime.strptime(self.marketdata.currentdatetime,"%Y-%m-%d").weekday()==0:
+        if self.marketdata.currentdatetime.weekday()==0:
             thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.BUY_TO_OPEN, 
-            quantity=1, ordertype=obt.ORDER_TYPE_MARKET, k=50, expirationdate=targetexpdate)
-        elif datetime.datetime.strptime(self.marketdata.currentdatetime,"%Y-%m-%d").weekday()==0:
+            quantity=1, ordertype=obt.ORDER_TYPE_MARKET, k=35, expirationdate=targetexpdate)
+        elif self.marketdata.currentdatetime.weekday()==4:
             thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.SELL_TO_CLOSE_ALL, 
-            quantity=0, ordertype=obt.ORDER_TYPE_MARKET, k=50, expirationdate=targetexpdate)
+            quantity=0, ordertype=obt.ORDER_TYPE_MARKET, k=0, expirationdate='')
         else:
             thisorder = obt.Order(void=True)
         return [thisorder]
@@ -53,6 +54,7 @@ def main():
     sampledata['datetime'] = pd.to_datetime(sampledata['date_eod']) # required column
     sampledata.rename(columns={'oi':'openinterest', 'date_mat':'expirationdate'}, inplace=True)
     uniquedaydates = pd.DataFrame(sampledata['date_eod'].unique(), columns=['datetime'])
+    uniquedaydates['datetime'] = pd.to_datetime(uniquedaydates['datetime'])
 
     tickerCLF = obt.OneTicker(tickername='CLF', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
     tickerCLF2 = obt.OneTicker(tickername='CLF2', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)

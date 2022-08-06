@@ -30,14 +30,14 @@ class Dealer():
         """
         self.market = marketdata
         self.market.resettimer()
-        self.currenttime = 0
+        self.currentdatetime = None
         self.orderlistwaiting = [None]
         self.orderlistexecuted = [None]
 
 
-    def priming(self, currenttime:datetime)->int:
-        self.currenttime = currenttime
-        return self.currenttime
+    def priming(self, currenttime:pd.Timestamp)->int:
+        self.currentdatetime = currenttime
+        return self.currentdatetime
         
 
     def sendorder(self, orderlist:list):
