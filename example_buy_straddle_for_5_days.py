@@ -43,7 +43,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             quantity=1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=1, k=35, expirationdate=targetexpdate)
         elif self.marketdata.currentdatetime.weekday()==4:
             # It's Friday, sell the put if we have any
-            if self.account.positions[0] is not None:
+            if self.account.positions['tickerindex'] is not None:
 
                 thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.SELL_TO_CLOSE_ALL, 
                 quantity=0, ordertype=obt.ORDER_TYPE_MARKET, pcflag=1, k=0, expirationdate='')

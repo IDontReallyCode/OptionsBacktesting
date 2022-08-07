@@ -64,6 +64,69 @@ class Trade():
 
 
 
+class Positions():
+    def __init__(self) -> None:
+        self.nbpositions    = 0
+        self.tickerindex    = []
+        self.symbol         = []
+        self.pcflag         = []
+        self.k              = []
+        self.expirationdate = []
+        self.quantity       = []
+        pass
+
+
+    def changeposition(self, quantity, tickerindex, symbol, pcflag:int = 1, k:float = 0, expirationdate:pd.Timestamp = pd.to_datetime('2000-01-01')):
+        if symbol in self.symbol:
+            where = self.symbol.index(symbol)
+            self.quantity[where] += quantity
+            if self.quantity[where]==0:
+                del self.tickerindex[where]
+                del self.symbol[where]
+                del self.pcflag[where]
+                del self.k[where]
+                del self.expirationdate[where]
+                del self.quantity[where]
+                self.nbpositions -= 1
+        else:
+            self.tickerindex.append(tickerindex)
+            self.symbol.append(symbol)
+            self.pcflag.append(pcflag)
+            self.k.append(k)
+            self.expirationdate.append(expirationdate)
+            self.quantity.append(quantity)
+            self.nbpositions+=1
+
+        return self.nbpositions
+
+
+    def getpositionofsymbol(self, symbol):
+        if symbol in self.symbol:
+            return self.quantity[self.symbol.index(symbol)]
+        else:
+            return 0
+
+
+    def getpositionsofticker(self, tickerindex):
+        outtickerindex    = []
+        outsymbol         = []
+        outpcflag         = []
+        outk              = []
+        outexpirationdate = []
+        outquantity       = []
+        if tickerindex in self.tickerindex:
+            # where = self.tickerindex.index(tickerindex)
+            indices = [i for i, x in enumerate(self.tickerindex) if x == tickerindex]
+            for index in indices:
+                outtickerindex.append(self.tickerindex[index])    
+                outsymbol.append(self.symbol[index])         
+                outpcflag.append(self.pcflag[index])         
+                outk.append(self.k[index])              
+                outexpirationdate.append(self.expirationdate[index]) 
+                outquantity.append(self.quantity[index])       
+
+        return outtickerindex, outsymbol, outpcflag, outk, outexpirationdate, outquantity      
+
 
 class Dealer():
     """
