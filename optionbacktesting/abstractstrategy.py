@@ -2,8 +2,7 @@ import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
 from .market import Market
-# from account import account
-from .broker import Order
+from .broker import Order, Account
 
 """
     ???????????????????????
@@ -22,12 +21,13 @@ class Strategy(ABC):
         super().__init__()
 
 
-    def priming(self, marketdata:Market):
+    def priming(self, marketdata:Market, account:Account):
         """
             Here, the strategy receives the initial set of data which the strategy can use to estimate a model, 
             or whatever it need to start spitting out trading signals
         """
         self.marketdata = marketdata
+        self.account = account
         self.estimatestrategy(None,None)
 
 
@@ -52,22 +52,9 @@ class Strategy(ABC):
             2- update a model/forecast/whatever
             3- return new instructions/orders for the market if necessary
         """
+        # [TODO] Check what we actually need here and not
         self.waitingorders = marketfeedback
         self.accountfeedback = accountfeedback
         theseorders = [Order(void=True)]
         return theseorders
         # pass
-
-
-    # def updatedata(self, marketfeedback, accountfeedback):
-    #     """
-    #         This method will:
-    #         1- update the data available
-    #         2- receive the feedback from the market, e.g., were the orders sent executed? what are the positions now? etc.
-    #         2- update a model/forecast/whatever
-    #         3- return new instructions/orders for the market if necessary
-    #     """
-    #     self.waitingorders = marketfeedback
-    #     self.accountfeedback = accountfeedback
-    #     theseorders = Order(void=True)
-    #     return theseorders

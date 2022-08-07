@@ -13,10 +13,8 @@ ORDER_TYPE_STOP = 2
 
 BUY_TO_OPEN = 1
 BUY_TO_CLOSE = 2
-BUY_TO_CLOSE_ALL = 3
 SELL_TO_OPEN = -1
 SELL_TO_CLOSE = -2
-SELL_TO_CLOSE_ALL = -3
 
 MARGINTYPE_NONE = 0         # No margin calculated  (In this basic mode, even when shorting a naked call, no margin is calculated)
 # TODO MARGINTYPE_TDA = 1          # Follow the guide here : https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
@@ -54,22 +52,12 @@ class Order():
         self.expirationdate = expirationdate
 
 
-class Position():
-    def __init__(self, tickerindex: int, assettype: int, quantity: int, pcflag:int = 1, k:float = 0, expirationdate='') -> None:
-        self.tickerindex = tickerindex
-        self.assettype = assettype
-        self.quantity = quantity
-        self.pcflag = pcflag
-        self.k = k
-        self.expirationdate = expirationdate
-        pass
-
 
 class Trade():
     """
         This is just a glorified "change" in position
     """
-    def __init__(self, datetime:pd.Timestamp, positionchange:Position, cost:float) -> None:
+    def __init__(self, datetime:pd.Timestamp, positionchange:dict, cost:float) -> None:
         self.datetime = datetime
         self.positionchange = positionchange
         self.cost = cost
@@ -132,11 +120,13 @@ class Dealer():
         """
         alltrades = []
         if self.orderlistwaiting[0] is not None:
-            for order in self.orderlistwaiting:
+            for index, order in enumerate(self.orderlistwaiting):
                 trade = self.checkorder(order)
                 if trade is not None:
                     alltrades.append(trade)
-            
+                    self.orderlistwaiting[index] = None
+            self.orderlistwaiting = filter(None, self.orderlistwaiting)
+
             return alltrades
         else:
             return None
@@ -156,8 +146,10 @@ class Dealer():
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     tradeprice = thisoption['ask'].iloc[0]
                     totalcost = -tradeprice*thisorder.quantity
-                    positionchange = Position(tickerindex=thisorder.tickerindex, assettype=thisorder.assettype, quantity=thisorder.quantity,
-                                                pcflag = thisorder.pcflag, k=thisorder.k, expirationdate=thisorder.expirationdate)
+                    positionchange = {'tickerindex':thisorder.tickerindex, 'assettype':thisorder.assettype,
+                                        'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
+                                        'quantity':thisorder.quantity
+                                     }
                     trade = Trade(self.market.currentdatetime, positionchange, totalcost)
                     
             elif thisorder.assettype==ASSET_TYPE_STOCK:
@@ -169,17 +161,26 @@ class Dealer():
         elif thisorder.action==BUY_TO_CLOSE:
             pass
 
-        elif thisorder.action==BUY_TO_CLOSE_ALL:
-            pass
-
         elif thisorder.action==SELL_TO_OPEN:
             pass
 
         elif thisorder.action==SELL_TO_CLOSE:
-            pass
+            if thisorder.assettype==ASSET_TYPE_OPTION:
+                if thisorder.ordertype==ORDER_TYPE_MARKET:
+                    optionchain = self.market.tickerlist[thisorder.tickerindex].getoptionsnapshot()
+                    thisoption = optionchain[(optionchain['pcflag']==thisorder.pcflag) 
+                                            & (optionchain['k']==thisorder.k) 
+                                            & (optionchain['expirationdate']==thisorder.expirationdate)]
+                    tradeprice = thisoption['ask'].iloc[0]
+                    totalcost = +tradeprice*thisorder.quantity
+                    positionchange = {'tickerindex':thisorder.tickerindex, 'assettype':thisorder.assettype,
+                                        'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
+                                        'quantity':thisorder.quantity
+                                     }
+                    trade = Trade(self.market.currentdatetime, positionchange, totalcost)
 
-        elif thisorder.action==SELL_TO_CLOSE_ALL:
-            pass
+
+            
 
         return trade
     
@@ -200,7 +201,7 @@ class Account():
         self._wealth = deposit
         self.margintype = margintype
         self.margin = 0
-        self.positions = [None]
+        self.positions = dict.fromkeys(['tickerindex', 'assettype', 'pcflag', 'k', 'expirationdate','quantity'])
         self.startingtime = 0
         self.wealthts = []
         pass
@@ -241,6 +242,8 @@ class Account():
         for thistrade in tradelist:
             self.wealth += thistrade.cost
             self.wealthts.append((thistrade.datetime, self.wealth))
+            # if we opened a new position, check if we already have a position like that, and add
+            # if we closed a position, find the position and remove it
         
         return self.wealth
         

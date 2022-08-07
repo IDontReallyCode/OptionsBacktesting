@@ -45,7 +45,7 @@ class Chronos():
         self.market.priming(self.currentdatetime)
         # self.dealer.priming(self.currentdatetime)
         self.account.priming(self.currentdatetime)
-        self.strategy.priming(self.market)
+        self.strategy.priming(self.market, self.account)
 
         
     def execute(self):

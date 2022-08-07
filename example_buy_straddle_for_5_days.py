@@ -23,8 +23,8 @@ class MyStrategy(obt.abstractstrategy.Strategy):
     def __init__(self) -> None:
         super().__init__()
 
-    def priming(self, market):
-        super().priming(market)
+    def priming(self, market:obt.Market, account:obt.Account):
+        super().priming(market, account)
         pass
 
     def estimatestrategy(self, marketfeedback, accountfeedback):
@@ -35,15 +35,22 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         optionsnapshot = self.marketdata.TIC0.getoptionsnapshot()
         # we want to trade 14+ dte option
         targetexpdate = optionsnapshot[(optionsnapshot['dte']>=14) & (optionsnapshot['pcflag']==1)].iloc[0]['expirationdate']
+        thisorder = obt.Order(void=True)
 
         if self.marketdata.currentdatetime.weekday()==0:
+            # It's Monday, buy a put of 14+ dte
             thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.BUY_TO_OPEN, 
             quantity=1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=1, k=35, expirationdate=targetexpdate)
         elif self.marketdata.currentdatetime.weekday()==4:
-            thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.SELL_TO_CLOSE_ALL, 
-            quantity=0, ordertype=obt.ORDER_TYPE_MARKET, pcflag=1, k=0, expirationdate='')
+            # It's Friday, sell the put if we have any
+            if self.account.positions[0] is not None:
+
+                thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.SELL_TO_CLOSE_ALL, 
+                quantity=0, ordertype=obt.ORDER_TYPE_MARKET, pcflag=1, k=0, expirationdate='')
+                
         else:
             thisorder = obt.Order(void=True)
+
         return [thisorder]
 
 
@@ -53,6 +60,7 @@ def main():
     # TODO  when creating the datetime column, it needs to be a datetime format.
     sampledata['datetime'] = pd.to_datetime(sampledata['date_eod']) # required column
     sampledata.rename(columns={'oi':'openinterest', 'date_mat':'expirationdate'}, inplace=True)
+    sampledata['symbol'] = sampledata['ticker'] + sampledata['pcflag'].astype(str) + sampledata['k'].astype(str) + sampledata['expirationdate']
     uniquedaydates = pd.DataFrame(sampledata['date_eod'].unique(), columns=['datetime'])
     uniquedaydates['datetime'] = pd.to_datetime(uniquedaydates['datetime'])
 
