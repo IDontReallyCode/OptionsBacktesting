@@ -155,7 +155,7 @@ class Dealer():
                                             & (optionchain['k']==thisorder.k) 
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     tradeprice = thisoption['ask'].iloc[0]
-                    totalcost = tradeprice*thisorder.quantity
+                    totalcost = -tradeprice*thisorder.quantity
                     positionchange = Position(tickerindex=thisorder.tickerindex, assettype=thisorder.assettype, quantity=thisorder.quantity,
                                                 pcflag = thisorder.pcflag, k=thisorder.k, expirationdate=thisorder.expirationdate)
                     trade = Trade(self.market.currentdatetime, positionchange, totalcost)

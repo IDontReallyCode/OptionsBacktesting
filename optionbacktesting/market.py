@@ -8,7 +8,7 @@ class Market():
     """
         The market class will contain the data for multiple tickers
     """
-    def __init__(self, tickerlist:list, tickernames:list) -> None:
+    def __init__(self, tickerlist:list, tickernames:list, ExtraData:list, ExtraNames:list) -> None:
         """
             After loading the data of one or more tickers (including the option chains), we "package" then toghether into one object that we call "market"
 
@@ -22,10 +22,17 @@ class Market():
         if not len(tickerlist) == len(tickernames):
             print("WTF is wrong with you")
             pass
+        if not len(ExtraData) == len(ExtraNames):
+            print("WTF is wrong with you")
+            pass
         self.tickernames = tickernames
         self.tickerlist = tickerlist
         for index, eachtick in enumerate(tickernames):
             setattr(self, eachtick, tickerlist[index])
+
+        for index, eachname in enumerate(ExtraNames):
+            setattr(self, eachname, ExtraData[index])
+
 
         self.currentdatetime = None
 

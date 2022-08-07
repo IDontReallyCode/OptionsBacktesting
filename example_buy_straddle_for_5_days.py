@@ -59,7 +59,7 @@ def main():
     tickerCLF = obt.OneTicker(tickername='CLF', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
     tickerCLF2 = obt.OneTicker(tickername='CLF2', tickertimeseries=pd.DataFrame(), optionchaintimeseries=sampledata)
     
-    mymarket = obt.Market((tickerCLF, tickerCLF2),('TIC0', 'TIC1'))
+    mymarket = obt.Market((tickerCLF, tickerCLF2),('TIC0', 'TIC1'), (tickerCLF, tickerCLF, tickerCLF), ("extra1", "extra2", "extra3"))
     mydealer = obt.Dealer(marketdata=mymarket)
     mystrategy = MyStrategy()
     mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
