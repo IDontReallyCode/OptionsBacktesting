@@ -65,67 +65,77 @@ class Trade():
 
 
 class Positions():
+    """
+    mypositions = {'tic1': {'equity': {'symbol': 'AMD', 'quantity': 5}, 
+                            'options': {'optionsymbol1': {'quantity': 5, 'pcflag': 0, 'k':10.0, 'expirationdate':'2000-01-01'}, 
+                                    'optionsymbol2': {'quantity': 5, 'pcflag': 0, 'k':20.0, 'expirationdate':'2000-01-01'} }},
+                    'tic2': {'equity':{'symbol': 'AAPL', 'quantity': 5}},
+                    'tic2': {'options':{'optionsymbol1': {'quantity': 5, 'pcflag': 0, 'k':10.0, 'expirationdate':'2000-01-01'}, 
+                                    'optionsymbol2': {'quantity': 5, 'pcflag': 0, 'k':20.0, 'expirationdate':'2000-01-01'} }}
+                    }
+    """
     def __init__(self) -> None:
-        self.nbpositions    = 0
-        self.tickerindex    = []
-        self.symbol         = []
-        self.pcflag         = []
-        self.k              = []
-        self.expirationdate = []
-        self.quantity       = []
+        self.mypositions = {}
         pass
 
 
-    def changeposition(self, quantity, tickerindex, symbol, pcflag:int = 1, k:float = 0, expirationdate:pd.Timestamp = pd.to_datetime('2000-01-01')):
-        if symbol in self.symbol:
-            where = self.symbol.index(symbol)
-            self.quantity[where] += quantity
-            if self.quantity[where]==0:
-                del self.tickerindex[where]
-                del self.symbol[where]
-                del self.pcflag[where]
-                del self.k[where]
-                del self.expirationdate[where]
-                del self.quantity[where]
-                self.nbpositions -= 1
+    def changestockposition(self, ticker:str, quantity:int):
+        # for stocks
+        if ticker not in self.mypositions:
+            self.mypositions[ticker] = {'equity': {'symbol':ticker, 'quantity':quantity}}
         else:
-            self.tickerindex.append(tickerindex)
-            self.symbol.append(symbol)
-            self.pcflag.append(pcflag)
-            self.k.append(k)
-            self.expirationdate.append(expirationdate)
-            self.quantity.append(quantity)
-            self.nbpositions+=1
+            if 'equity' in self.mypositions[ticker]:
+                self.mypositions[ticker]['equity']['quantity']+=quantity
+                if self.mypositions[ticker]['equity']['quantity']==0:
+                    self.myposition[ticker].pop('equity')
+            else:
+                self.mypositions[ticker] = {'equity': {'symbol':ticker, 'quantity':quantity}}
 
-        return self.nbpositions
+        return self.mypositions
 
 
-    def getpositionofsymbol(self, symbol):
-        if symbol in self.symbol:
-            return self.quantity[self.symbol.index(symbol)]
+    def changeoptionposition(self, ticker:str, quantity:int, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp):
+        # for options
+        if ticker not in self.mypositions:
+            self.mypositions[ticker] = {'options': {[symbol]: {'quantity': quantity, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}}}
         else:
-            return 0
+            if 'options' in self.mypositions[ticker]:
+                if symbol in self.mypositions[ticker]['options']:
+                    self.mypositions[ticker]['options'][symbol]['quantity']+=quantity
+                    if self.mypositions[ticker]['options'][symbol]['quantity']==0:
+                        self.mypositions[ticker]['options'].pop(symbol)
+                else:
+                    self.mypositions[ticker]['options'][symbol] = {'quantity': quantity, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}
+            else:
+                self.mypositions[ticker]['options'] = {symbol: {'quantity': quantity, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}}
+        return self.mypositions
 
 
-    def getpositionsofticker(self, tickerindex):
-        outtickerindex    = []
-        outsymbol         = []
-        outpcflag         = []
-        outk              = []
-        outexpirationdate = []
-        outquantity       = []
-        if tickerindex in self.tickerindex:
-            # where = self.tickerindex.index(tickerindex)
-            indices = [i for i, x in enumerate(self.tickerindex) if x == tickerindex]
-            for index in indices:
-                outtickerindex.append(self.tickerindex[index])    
-                outsymbol.append(self.symbol[index])         
-                outpcflag.append(self.pcflag[index])         
-                outk.append(self.k[index])              
-                outexpirationdate.append(self.expirationdate[index]) 
-                outquantity.append(self.quantity[index])       
+    def getoptionpositions(self, ticker:str, symbol:str=None):
+        if ticker in self.mypositions:
+            if symbol is None:
+                if 'options' in self.mypositions[ticker]:
+                    return self.mypositions[ticker]['options']
+                else:
+                    return {}
+            else:
+                if 'options' in self.mypositions[ticker]:
+                    if symbol in self.mypositions[ticker]['options']:
+                        return self.mypositions[ticker]['options'][symbol]
+                    else:
+                        return {}
+                else:
+                    return {}
+        else:
+            return {}
 
-        return outtickerindex, outsymbol, outpcflag, outk, outexpirationdate, outquantity      
+
+    def getpositionsofticker(self, ticker):
+        return self.mypositions[ticker]     
+
+    
+    def getpositions(self):
+        return self.mypositions
 
 
 class Dealer():

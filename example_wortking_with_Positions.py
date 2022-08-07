@@ -1,19 +1,27 @@
 import optionbacktesting as obt
+import pandas as pd
 
 def main():
     mypositions = obt.Positions()
 
-    print(mypositions.getpositionofsymbol("CLF02022-05-07"))
-    afterbuytoopen = mypositions.changeposition(+1, 0, "CLF02022-05-07", 1, 35, '2022-05-07')
-    print(mypositions.getpositionofsymbol("CLF02022-05-07"))
-    afterselltoclose = mypositions.changeposition(-1, 0, "CLF02022-05-07", 1, 35, '2022-05-07')
-    print(mypositions.getpositionofsymbol("CLF02022-05-07"))
-    afterbuytoopen = mypositions.changeposition(+1, 0, "CLF02022-05-07", 1, 35, '2022-05-07')
-    print(mypositions.getpositionofsymbol("CLF02022-05-07"))
-    afteraddingtoopenedpositions = mypositions.changeposition(+5, 0, "CLF02022-05-07", 1, 35, '2022-05-07')
-    print(mypositions.getpositionofsymbol("CLF02022-05-07"))
-    afteraddingnewpositions = mypositions.changeposition(+5, 0, "CLF02022-06-07", 1, 40, '2022-06-07')
-    print(mypositions.getpositionsofticker(0))
+    print(mypositions.changestockposition('CLF', 10))
+    # print(mypositions.mypositions)
+
+    print(mypositions.changeoptionposition('CLF', +5, 'CLF20221010035', 0, 35, pd.to_datetime('2022-10-10')))
+    # print(mypositions.mypositions)
+    print(mypositions.changeoptionposition('CLF', -5, 'CLF20221010040', 0, 40, pd.to_datetime('2022-10-10')))
+    # print(mypositions.mypositions)
+
+    print(mypositions.getoptionpositions('CLF'))
+
+    print(mypositions.changeoptionposition('CLF', -5, 'CLF20221010035', 0, 35, pd.to_datetime('2022-10-10')))
+
+    print(mypositions.getoptionpositions('CLF'))
+    print(mypositions.getoptionpositions('CLF','CLF20221010035'))
+
+    print(mypositions.changeoptionposition('CLF', +5, 'CLF20221010040', 0, 40, pd.to_datetime('2022-10-10')))
+
+    print(mypositions.getoptionpositions('CLF'))
 
     done=1
 
