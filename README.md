@@ -74,8 +74,11 @@ Other columns can be there if you need them for strategy.
 ### Extra Data
 You can send a list of extradata with their name when creating the market object.
 Suppose you want to use tweets
+
 mymarket = OptionBackTesting.Market( {...}, {...}, [tweetDataFrame], ['alltweets'])
+
 The data will then by easily accessible inside the Strategy object by doing self.marketdata.alltweets
+
 The only thing is that the user will be responsible for accessign only the data available so far and not access tweets which are in the future.
 
 
