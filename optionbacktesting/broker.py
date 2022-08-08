@@ -231,7 +231,7 @@ class Dealer():
                                             & (optionchain['k']==thisorder.k) 
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     tradeprice = thisoption['ask'].iloc[0]
-                    totalcost = -tradeprice*thisorder.quantity
+                    totalcost = -tradeprice*thisorder.quantity*100
                     positionchange = {'ticker':thisorder.ticker, 'quantity':thisorder.quantity, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
@@ -257,8 +257,8 @@ class Dealer():
                     thisoption = optionchain[(optionchain['pcflag']==thisorder.pcflag) 
                                             & (optionchain['k']==thisorder.k) 
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
-                    tradeprice = thisoption['ask'].iloc[0]
-                    totalcost = +tradeprice*thisorder.quantity
+                    tradeprice = thisoption['bid'].iloc[0]
+                    totalcost = +tradeprice*thisorder.quantity*100
                     positionchange = {'ticker':thisorder.ticker, 'quantity':thisorder.quantity, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}

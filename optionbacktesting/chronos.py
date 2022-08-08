@@ -55,6 +55,7 @@ class Chronos():
             if dealerfeedback is not None:
                 accountfeedback = self.account.trade(dealerfeedback)
             else:
+                # TODO Check what else we could need here
                 accountfeedback = self.account.wealth
             strategyfeedback = self.strategy.estimatestrategy(dealerfeedback, accountfeedback)
             

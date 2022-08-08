@@ -30,26 +30,26 @@ class MyStrategy(obt.abstractstrategy.Strategy):
     def estimatestrategy(self, marketfeedback, accountfeedback):
         super().estimatestrategy(marketfeedback, accountfeedback)
 
-        # self.marketdata.currentdatetime
 
         optionsnapshot = self.marketdata.TIC0.getoptionsnapshot()
         # we want to trade 14+ dte option
+        # we filter only those with 14+, then pick the first date because it is sorted by dte
         targetexpdate = optionsnapshot[(optionsnapshot['dte']>=14) & (optionsnapshot['pcflag']==1)].iloc[0]['expirationdate']
         targetstrike = 20
         targetoption = optionsnapshot[(optionsnapshot['k']==targetstrike) & (optionsnapshot['pcflag']==1) & (optionsnapshot['expirationdate']==targetexpdate)]
 
         doatrade=False
-        if self.marketdata.currentdatetime.weekday()==0:
-            # It's Monday, buy a put of 14+ dte
+        if self.marketdata.currentdatetime.weekday()>=4:
+            # Friday has passed, we put an order in for next Monday, buy a put of 14+ dte
             thisorder = obt.Order(tickerindex = 0, ticker=targetoption.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetoption.iloc[0]['symbol'], 
                                     action=obt.BUY_TO_OPEN, quantity=+1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetoption.iloc[0]['pcflag'], 
                                     k=targetoption.iloc[0]['k'], expirationdate=targetoption.iloc[0]['expirationdate'])
             doatrade=True
-        elif self.marketdata.currentdatetime.weekday()==4:
-            # It's Friday, sell the put if we have any
+        elif self.marketdata.currentdatetime.weekday()==3:
+            # Today is Thursday, we put an order to sell Friday (or next opened day)
             if self.account.positions.getoptionquantity(targetoption.iloc[0]['ticker'], targetoption.iloc[0]['symbol'])>0:
                 thisorder = obt.Order(tickerindex = 0, ticker=targetoption.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetoption.iloc[0]['symbol'], 
-                                        action=obt.SELL_TO_CLOSE, quantity=-1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetoption.iloc[0]['pcflag'], 
+                                        action=obt.SELL_TO_CLOSE, quantity=1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetoption.iloc[0]['pcflag'], 
                                         k=targetoption.iloc[0]['k'], expirationdate=targetoption.iloc[0]['expirationdate'])
                 doatrade=True
 
