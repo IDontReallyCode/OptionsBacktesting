@@ -35,23 +35,28 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         optionsnapshot = self.marketdata.TIC0.getoptionsnapshot()
         # we want to trade 14+ dte option
         targetexpdate = optionsnapshot[(optionsnapshot['dte']>=14) & (optionsnapshot['pcflag']==1)].iloc[0]['expirationdate']
-        thisorder = obt.Order(void=True)
+        targetstrike = 20
+        targetoption = optionsnapshot[(optionsnapshot['k']==targetstrike) & (optionsnapshot['pcflag']==1) & (optionsnapshot['expirationdate']==targetexpdate)]
 
+        doatrade=False
         if self.marketdata.currentdatetime.weekday()==0:
             # It's Monday, buy a put of 14+ dte
-            thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.BUY_TO_OPEN, 
-            quantity=1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=1, k=35, expirationdate=targetexpdate)
+            thisorder = obt.Order(tickerindex = 0, ticker=targetoption.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetoption.iloc[0]['symbol'], 
+                                    action=obt.BUY_TO_OPEN, quantity=+1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetoption.iloc[0]['pcflag'], 
+                                    k=targetoption.iloc[0]['k'], expirationdate=targetoption.iloc[0]['expirationdate'])
+            doatrade=True
         elif self.marketdata.currentdatetime.weekday()==4:
             # It's Friday, sell the put if we have any
-            if self.account.positions['tickerindex'] is not None:
+            if self.account.positions.getoptionquantity(targetoption.iloc[0]['ticker'], targetoption.iloc[0]['symbol'])>0:
+                thisorder = obt.Order(tickerindex = 0, ticker=targetoption.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetoption.iloc[0]['symbol'], 
+                                        action=obt.SELL_TO_CLOSE, quantity=-1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetoption.iloc[0]['pcflag'], 
+                                        k=targetoption.iloc[0]['k'], expirationdate=targetoption.iloc[0]['expirationdate'])
+                doatrade=True
 
-                thisorder = obt.Order(void=False, tickerindex=0, assettype=obt.ASSET_TYPE_OPTION, action=obt.SELL_TO_CLOSE_ALL, 
-                quantity=0, ordertype=obt.ORDER_TYPE_MARKET, pcflag=1, k=0, expirationdate='')
-                
+        if doatrade:
+            return [thisorder]
         else:
-            thisorder = obt.Order(void=True)
-
-        return [thisorder]
+            return []
 
 
 def main():

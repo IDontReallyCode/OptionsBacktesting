@@ -37,12 +37,13 @@ class Order():
             - type: {market=0, limit=1, stop=2}
             - triggerprice: float
     """
-    def __init__(self, void: bool=True, tickerindex:int = 0, assettype:int = ASSET_TYPE_STOCK, action:int = BUY_TO_OPEN, quantity:int = 1, 
+    def __init__(self, tickerindex:int, ticker:str, assettype:int, symbol: str, action:int, quantity:int, 
                  ordertype:int = ORDER_TYPE_MARKET, triggerprice:int = 0, pcflag:int = 1, k:float = 0, expirationdate:int = 0
                  ) -> None:
-        self.void = void
         self.tickerindex = tickerindex
+        self.ticker = ticker
         self.assettype = assettype
+        self.symbol = symbol
         self.action = action
         self.quantity = quantity
         self.ordertype = ordertype
@@ -97,7 +98,7 @@ class Positions():
     def changeoptionposition(self, ticker:str, quantity:int, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp):
         # for options
         if ticker not in self.mypositions:
-            self.mypositions[ticker] = {'options': {[symbol]: {'quantity': quantity, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}}}
+            self.mypositions[ticker] = {'options': {symbol: {'quantity': quantity, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}}}
         else:
             if 'options' in self.mypositions[ticker]:
                 if symbol in self.mypositions[ticker]['options']:
@@ -130,6 +131,19 @@ class Positions():
             return {}
 
 
+    def getoptionquantity(self, ticker:str, symbol:str):
+        if ticker in self.mypositions:
+            if 'options' in self.mypositions[ticker]:
+                if symbol in self.mypositions[ticker]['options']:
+                    return self.mypositions[ticker]['options'][symbol]['quantity']
+                else:
+                    return 0
+            else:
+                return 0
+        else:
+            return 0
+
+
     def getpositionsofticker(self, ticker):
         return self.mypositions[ticker]     
 
@@ -148,8 +162,8 @@ class Dealer():
         """
         self.market = marketdata
         self.market.resettimer()
-        self.orderlistwaiting = [None]
-        self.orderlistexecuted = [None]
+        self.orderlistwaiting = []
+        self.orderlistexecuted = []
         self.optiontradingcost = optiontradingcost
 
 
@@ -163,13 +177,12 @@ class Dealer():
             This is the method through which a strategy sends an order to the dealer to execute
         """
         for eachorder in orderlist:
-            if not eachorder.void:
-                if self.orderlistwaiting[0] is None:
-                    self.orderlistwaiting[0] = eachorder
-                else:
-                    self.orderlistwaiting.append(eachorder)
+            # if self.orderlistwaiting[0] is None:
+            #     self.orderlistwaiting[0] = eachorder
+            # else:
+            self.orderlistwaiting.append(eachorder)
 
-
+        # done=1
             # pass
 
 
@@ -192,13 +205,13 @@ class Dealer():
             Takes the list of 
         """
         alltrades = []
-        if self.orderlistwaiting[0] is not None:
+        if len(self.orderlistwaiting)>0:
             for index, order in enumerate(self.orderlistwaiting):
                 trade = self.checkorder(order)
                 if trade is not None:
                     alltrades.append(trade)
-                    self.orderlistwaiting[index] = None
-            self.orderlistwaiting = filter(None, self.orderlistwaiting)
+                    del self.orderlistwaiting[index]
+            # self.orderlistwaiting = filter(None, self.orderlistwaiting)
 
             return alltrades
         else:
@@ -219,10 +232,10 @@ class Dealer():
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     tradeprice = thisoption['ask'].iloc[0]
                     totalcost = -tradeprice*thisorder.quantity
-                    positionchange = {'tickerindex':thisorder.tickerindex, 'assettype':thisorder.assettype,
+                    positionchange = {'ticker':thisorder.ticker, 'quantity':thisorder.quantity, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
-                                        'quantity':thisorder.quantity
-                                     }
+                                        'symbol':thisorder.symbol}
+                                     
                     trade = Trade(self.market.currentdatetime, positionchange, totalcost)
                     
             elif thisorder.assettype==ASSET_TYPE_STOCK:
@@ -246,10 +259,9 @@ class Dealer():
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     tradeprice = thisoption['ask'].iloc[0]
                     totalcost = +tradeprice*thisorder.quantity
-                    positionchange = {'tickerindex':thisorder.tickerindex, 'assettype':thisorder.assettype,
+                    positionchange = {'ticker':thisorder.ticker, 'quantity':thisorder.quantity, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
-                                        'quantity':thisorder.quantity
-                                     }
+                                        'symbol':thisorder.symbol}
                     trade = Trade(self.market.currentdatetime, positionchange, totalcost)
 
 
@@ -274,7 +286,7 @@ class Account():
         self._wealth = deposit
         self.margintype = margintype
         self.margin = 0
-        self.positions = dict.fromkeys(['tickerindex', 'assettype', 'pcflag', 'k', 'expirationdate','quantity'])
+        self.positions = Positions()
         self.startingtime = 0
         self.wealthts = []
         pass
@@ -317,6 +329,12 @@ class Account():
             self.wealthts.append((thistrade.datetime, self.wealth))
             # if we opened a new position, check if we already have a position like that, and add
             # if we closed a position, find the position and remove it
+            if thistrade.positionchange['assettype']==ASSET_TYPE_OPTION:
+                self.positions.changeoptionposition(thistrade.positionchange['ticker'], thistrade.positionchange['quantity'],
+                                            thistrade.positionchange['symbol'], thistrade.positionchange['pcflag'], thistrade.positionchange['k'],
+                                            thistrade.positionchange['expirationdate'])
+            elif thistrade.positionchange['assettype']==ASSET_TYPE_STOCK:
+                self.positions.changestockposition(thistrade.positionchange['ticker'],thistrade.positionchange['quantity'])
         
         return self.wealth
         

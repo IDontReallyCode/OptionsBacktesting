@@ -55,6 +55,6 @@ class Strategy(ABC):
         # [TODO] Check what we actually need here and not
         self.waitingorders = marketfeedback
         self.accountfeedback = accountfeedback
-        theseorders = [Order(void=True)]
+        theseorders = []
         return theseorders
         # pass
