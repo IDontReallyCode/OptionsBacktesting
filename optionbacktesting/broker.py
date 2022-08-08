@@ -205,14 +205,18 @@ class Dealer():
             Takes the list of 
         """
         alltrades = []
+        stillwaiting = []
         if len(self.orderlistwaiting)>0:
             for index, order in enumerate(self.orderlistwaiting):
                 trade = self.checkorder(order)
                 if trade is not None:
                     alltrades.append(trade)
-                    del self.orderlistwaiting[index]
-            # self.orderlistwaiting = filter(None, self.orderlistwaiting)
+                    self.orderlistwaiting[index] = None
+                    # del self.orderlistwaiting[index]
+                else:
+                    stillwaiting.append(order)
 
+            self.orderlistwaiting = stillwaiting
             return alltrades
         else:
             return None
