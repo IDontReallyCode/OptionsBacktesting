@@ -56,7 +56,7 @@ class Chronos():
                 accountfeedback = self.account.trade(dealerfeedback)
             else:
                 # TODO Check what else we could need here
-                accountfeedback = self.account.wealth
+                accountfeedback = self.account.capital
             strategyfeedback = self.strategy.estimatestrategy(dealerfeedback, accountfeedback)
             
             self.dealer.sendorder(strategyfeedback)

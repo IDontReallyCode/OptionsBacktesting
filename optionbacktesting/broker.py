@@ -58,10 +58,10 @@ class Trade():
     """
         This is just a glorified "change" in position
     """
-    def __init__(self, datetime:pd.Timestamp, positionchange:dict, cost:float) -> None:
+    def __init__(self, datetime:pd.Timestamp, positionchange:dict, cashflow:float) -> None:
         self.datetime = datetime
         self.positionchange = positionchange
-        self.cost = cost
+        self.cashflow = cashflow
 
 
 
@@ -231,12 +231,12 @@ class Dealer():
                                             & (optionchain['k']==thisorder.k) 
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     tradeprice = thisoption['ask'].iloc[0]
-                    totalcost = -tradeprice*thisorder.quantity*100
+                    cashflow = -tradeprice*thisorder.quantity*100
                     positionchange = {'ticker':thisorder.ticker, 'quantity':thisorder.quantity, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
                                      
-                    trade = Trade(self.market.currentdatetime, positionchange, totalcost)
+                    trade = Trade(self.market.currentdatetime, positionchange, cashflow)
                     
             elif thisorder.assettype==ASSET_TYPE_STOCK:
                 pass
@@ -258,11 +258,11 @@ class Dealer():
                                             & (optionchain['k']==thisorder.k) 
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     tradeprice = thisoption['bid'].iloc[0]
-                    totalcost = +tradeprice*thisorder.quantity*100
+                    cashflow = +tradeprice*thisorder.quantity*100
                     positionchange = {'ticker':thisorder.ticker, 'quantity':thisorder.quantity, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
-                    trade = Trade(self.market.currentdatetime, positionchange, totalcost)
+                    trade = Trade(self.market.currentdatetime, positionchange, cashflow)
 
 
             
@@ -275,38 +275,40 @@ class Dealer():
 
 class Account():
     """
-        An Account will manage the wealth and the margins
+        An Account will manage the capital and the margins
         It will also contain a list of positions
             One position is a dict = {'ticker':ticker,  'quantity':qte}
             ticker is the ticker of the stock, or the composite ticker of the option
             quantity can be positive of negative for long and short positions
     """
 
-    def __init__(self, deposit:float, margintype:int = MARGINTYPE_NONE) -> None:
-        self._wealth = deposit
+    def __init__(self, deposit:float, margintype:int = MARGINTYPE_NONE, trackportfoliovalue:bool = False) -> None:
+        self._capital = deposit
         self.margintype = margintype
         self.margin = 0
         self.positions = Positions()
         self.startingtime = 0
-        self.wealthts = []
+        self.capitalts = []
+        self.trackportfoliovalue = trackportfoliovalue
+        # [TODO] add a step tp track the position values at each time step in the chronology
         pass
 
 
     @property
-    def wealth(self):
-        return self._wealth
+    def capital(self):
+        return self._capital
 
     
-    @wealth.setter
-    def wealth(self, value):
-        self._wealth = value
+    @capital.setter
+    def capital(self, value):
+        self._capital = value
 
 
     def capitalavailable(self) -> float:
         """
             Simply return how much money is available for a trade
         """
-        return self.wealth - self.margin
+        return self._capital - self.margin
 
 
     def margincostoftrade(self, tradedetails:dict)-> float:
@@ -325,8 +327,8 @@ class Account():
     
     def trade(self, tradelist:list):
         for thistrade in tradelist:
-            self.wealth += thistrade.cost
-            self.wealthts.append((thistrade.datetime, self.wealth))
+            self.capital += thistrade.cashflow
+            self.capitalts.append((thistrade.datetime, self.capital))
             # if we opened a new position, check if we already have a position like that, and add
             # if we closed a position, find the position and remove it
             if thistrade.positionchange['assettype']==ASSET_TYPE_OPTION:
@@ -336,7 +338,7 @@ class Account():
             elif thistrade.positionchange['assettype']==ASSET_TYPE_STOCK:
                 self.positions.changestockposition(thistrade.positionchange['ticker'],thistrade.positionchange['quantity'])
         
-        return self.wealth
+        return self.capital
         
 
 
