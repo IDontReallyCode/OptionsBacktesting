@@ -132,6 +132,16 @@ class Positions():
             return {}
 
 
+    def getoptionsymbols(self, ticker:str):
+        if ticker in self.mypositions:
+            if 'options' in self.mypositions[ticker]:
+                return list[self.mypositions[ticker]['options'].keys()]
+            else:
+                return []
+        else:
+            return []
+
+
     def getoptionquantity(self, ticker:str, symbol:str):
         if ticker in self.mypositions:
             if 'options' in self.mypositions[ticker]:
