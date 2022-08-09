@@ -88,9 +88,9 @@ class Positions():
             if 'equity' in self.mypositions[ticker]:
                 self.mypositions[ticker]['equity']['quantity']+=quantity
                 if self.mypositions[ticker]['equity']['quantity']==0:
-                    self.myposition[ticker].pop('equity')
+                    self.mypositions[ticker].pop('equity')
             else:
-                self.mypositions[ticker] = {'equity': {'symbol':ticker, 'quantity':quantity}}
+                self.mypositions[ticker]['equity'] = {'symbol':ticker, 'quantity':quantity}
 
         return self.mypositions
 
@@ -98,6 +98,7 @@ class Positions():
     def changeoptionposition(self, ticker:str, quantity:int, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp):
         # for options
         if ticker not in self.mypositions:
+            # if ticker is not there at all
             self.mypositions[ticker] = {'options': {symbol: {'quantity': quantity, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}}}
         else:
             if 'options' in self.mypositions[ticker]:
@@ -145,11 +146,25 @@ class Positions():
 
 
     def getpositionsofticker(self, ticker):
-        return self.mypositions[ticker]     
+        if ticker in self.mypositions:
+            return self.mypositions[ticker]  
+        else:
+            return {}   
 
     
     def getpositions(self):
         return self.mypositions
+
+    
+    def getstockquantityforticker(self, ticker):
+        if ticker in self.mypositions:
+            if 'equity' in self.mypositions[ticker]:
+                return self.mypositions[ticker]['equity']['quantity']
+            else:
+                return 0
+        else:
+            return 0
+
 
 
 class Dealer():
@@ -211,11 +226,10 @@ class Dealer():
                 trade = self.checkorder(order)
                 if trade is not None:
                     alltrades.append(trade)
-                    self.orderlistwaiting[index] = None
-                    # del self.orderlistwaiting[index]
                 else:
                     stillwaiting.append(order)
 
+            # overwrite the list of waiting orders by the list of orders still waiting because they were not executed
             self.orderlistwaiting = stillwaiting
             return alltrades
         else:
@@ -224,7 +238,11 @@ class Dealer():
 
     def checkorder(self, thisorder):
         """
-            Tries to execute the order within the current candle data
+            For stocks, at least for now, trade occurs at Open price of the candle
+                Remember that the trade occurs in the candle following the timestep when the order was place.
+            for options, at least for now, we buy at ask, sell at bid
+
+            [TODO] create a function for getassetprice(), and in that function, allow other methods for trading prices.
         """
         trade = None
         if thisorder.action==BUY_TO_OPEN:
@@ -241,12 +259,29 @@ class Dealer():
                                         'symbol':thisorder.symbol}
                                      
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
-                    
+                elif thisorder.ordertype==ORDER_TYPE_LIMIT:
+                    raise("this order type is not coded yet.")
+                elif thisorder.ordertype==ORDER_TYPE_STOP:
+                    raise("this order type is not coded yet.")
+                else:
+                    raise("What type of order are you trying to do? Use the pre-determined constants")
             elif thisorder.assettype==ASSET_TYPE_STOCK:
-                pass
+                if thisorder.ordertype==ORDER_TYPE_MARKET:
+                    candle = self.market.tickerlist[thisorder.tickerindex].getcurrentctockcandle()
+                    tradeprice = candle['open'].iloc[0]
+                    cashflow = -tradeprice*thisorder.quantity
+                    positionchange = {'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_STOCK,
+                                        'symbol':thisorder.ticker}
+                                     
+                    trade = Trade(self.market.currentdatetime, positionchange, cashflow)
+                elif thisorder.ordertype==ORDER_TYPE_LIMIT:
+                    raise("this order type is not coded yet.")
+                elif thisorder.ordertype==ORDER_TYPE_STOP:
+                    raise("this order type is not coded yet.")
+                else:
+                    raise("What type of order are you trying to do? Use the pre-determined constants")
             else:
-                print("What in the actual ?")
-                pass
+                raise("What in the actual ?")
             
         elif thisorder.action==BUY_TO_CLOSE:
             pass
@@ -267,7 +302,30 @@ class Dealer():
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
-
+                elif thisorder.ordertype==ORDER_TYPE_LIMIT:
+                    raise("this order type is not coded yet.")
+                elif thisorder.ordertype==ORDER_TYPE_STOP:
+                    raise("this order type is not coded yet.")
+                else:
+                    raise("What type of order are you trying to do? Use the pre-determined constants")
+            elif thisorder.assettype==ASSET_TYPE_STOCK:
+                if thisorder.ordertype==ORDER_TYPE_MARKET:
+                    candle = self.market.tickerlist[thisorder.tickerindex].getcurrentctockcandle()
+                    tradeprice = candle['open'].iloc[0]
+                    cashflow = +tradeprice*thisorder.quantity
+                    positionchange = {'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_STOCK,
+                                        'symbol':thisorder.ticker}
+                                     
+                    trade = Trade(self.market.currentdatetime, positionchange, cashflow)
+                elif thisorder.ordertype==ORDER_TYPE_LIMIT:
+                    raise("this order type is not coded yet.")
+                elif thisorder.ordertype==ORDER_TYPE_STOP:
+                    raise("this order type is not coded yet.")
+                else:
+                    raise("What type of order are you trying to do? Use the pre-determined constants")
+            else:
+                raise("What in the actual ?")
+                
 
             
 

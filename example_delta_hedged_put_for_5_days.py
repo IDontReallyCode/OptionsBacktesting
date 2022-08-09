@@ -23,9 +23,6 @@ class MyStrategy(obt.abstractstrategy.Strategy):
     def __init__(self) -> None:
         super().__init__()
 
-    def priming(self, market:obt.Market, account:obt.Account):
-        super().priming(market, account)
-        pass
 
     def estimatestrategy(self, marketfeedback, accountfeedback):
         super().estimatestrategy(marketfeedback, accountfeedback)
@@ -36,34 +33,82 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         # we filter only those with 21+, then pick the first date because it is sorted by dte
         targetexpdate = optionsnapshot[(optionsnapshot['dte']>=21)].iloc[0]['expirationdate']
         # we want to find the straddle with the highest Vega
-        optionsnapshot = optionsnapshot[(optionsnapshot['expirationdate']==targetexpdate)]
-        straddlesnapshot = optionsnapshot.groupby('k').sum()
-        # "k" becomes the key to the DataFrame
-        targetstrike = straddlesnapshot['vega'].idxmax()
-        targetcall = optionsnapshot[(optionsnapshot['k']==targetstrike) & (optionsnapshot['pcflag']==0) & (optionsnapshot['expirationdate']==targetexpdate)]
-        targetput = optionsnapshot[(optionsnapshot['k']==targetstrike) & (optionsnapshot['pcflag']==1) & (optionsnapshot['expirationdate']==targetexpdate)]
+        optionsnapshot = optionsnapshot[(optionsnapshot['expirationdate']==targetexpdate) & (optionsnapshot['pcflag']==0)]
+        optionsnapshot['deltatrigger'] = (optionsnapshot['delta']+0.20)**2
+        trick = optionsnapshot.groupby('k').sum()
+        targetstrike = trick['deltatrigger'].idxmin()
+
+        targetput = optionsnapshot[(optionsnapshot['k']==targetstrike) & (optionsnapshot['pcflag']==0) & (optionsnapshot['expirationdate']==targetexpdate)]
 
         doatrade=False
         theseorders = []
-        if self.marketdata.currentdatetime.weekday()>=4:
+        if self.marketdata.currentdatetime.weekday()>=4: #Friday after close => we submit order to open the position
             # Friday has passed, we put an order in for next Monday, buy a put of 14+ dte
-            theseorders.append(obt.Order(tickerindex = 0, ticker=targetcall.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetcall.iloc[0]['symbol'], 
-                                    action=obt.BUY_TO_OPEN, quantity=+1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetcall.iloc[0]['pcflag'], 
-                                    k=targetcall.iloc[0]['k'], expirationdate=targetcall.iloc[0]['expirationdate']))
             theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetput.iloc[0]['symbol'], 
                                     action=obt.BUY_TO_OPEN, quantity=+1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetput.iloc[0]['pcflag'], 
                                     k=targetput.iloc[0]['k'], expirationdate=targetput.iloc[0]['expirationdate']))
+            theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_STOCK, symbol=targetput.iloc[0]['ticker'], 
+                                    action=obt.BUY_TO_OPEN, quantity=20))
             doatrade=True
-        elif self.marketdata.currentdatetime.weekday()==3:
+        elif self.marketdata.currentdatetime.weekday()==0: #Monday after close => we adjust hedge
+            # we need the option symbol to get the new delta and adjust
+            optionpositions = self.account.positions.getoptionpositions(targetput.iloc[0]['ticker'])
+            optionsymbol = list(optionpositions.keys())[0]
+            optionsnapshot = self.marketdata.TIC0.getoptionsnapshot()
+            newdelta = optionsnapshot[optionsnapshot['symbol']==optionsymbol].iloc[0]['delta']
+            stockposition = self.account.positions.getstockquantityforticker(targetput.iloc[0]['ticker'])
+            quantityadjustementtodeltahedge = -1*(stockposition+(newdelta*100).astype(int))
+            if not quantityadjustementtodeltahedge==0:
+                theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_STOCK, symbol=targetput.iloc[0]['ticker'], 
+                        action=obt.BUY_TO_OPEN, quantity=quantityadjustementtodeltahedge))
+                doatrade = True
+
+        elif self.marketdata.currentdatetime.weekday()==1: #Tuesday after close => we adjust hedge
+            optionpositions = self.account.positions.getoptionpositions(targetput.iloc[0]['ticker'])
+            optionsymbol = list(optionpositions.keys())[0]
+            optionsnapshot = self.marketdata.TIC0.getoptionsnapshot()
+            newdelta = optionsnapshot[optionsnapshot['symbol']==optionsymbol].iloc[0]['delta']
+            stockposition = self.account.positions.getstockquantityforticker(targetput.iloc[0]['ticker'])
+            quantityadjustementtodeltahedge = -1*(stockposition+(newdelta*100).astype(int))
+            if not quantityadjustementtodeltahedge==0:
+                theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_STOCK, symbol=targetput.iloc[0]['ticker'], 
+                        action=obt.BUY_TO_OPEN, quantity=quantityadjustementtodeltahedge))
+                doatrade = True
+
+        elif self.marketdata.currentdatetime.weekday()==2: #Wednesday after close => we adjust hedge
+            optionpositions = self.account.positions.getoptionpositions(targetput.iloc[0]['ticker'])
+            optionsymbol = list(optionpositions.keys())[0]
+            optionsnapshot = self.marketdata.TIC0.getoptionsnapshot()
+            newdelta = optionsnapshot[optionsnapshot['symbol']==optionsymbol].iloc[0]['delta']
+            stockposition = self.account.positions.getstockquantityforticker(targetput.iloc[0]['ticker'])
+            quantityadjustementtodeltahedge = -1*(stockposition+(newdelta*100).astype(int))
+            if not quantityadjustementtodeltahedge==0:
+                theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_STOCK, symbol=targetput.iloc[0]['ticker'], 
+                        action=obt.BUY_TO_OPEN, quantity=quantityadjustementtodeltahedge))
+                doatrade = True
+
+        elif self.marketdata.currentdatetime.weekday()==3: #Thursday after close we submit orders to close position
             # Today is Thursday, we put an order to sell Friday (or next opened day)
-            if self.account.positions.getoptionquantity(targetcall.iloc[0]['ticker'], targetcall.iloc[0]['symbol'])>0:
-                theseorders.append(obt.Order(tickerindex = 0, ticker=targetcall.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetcall.iloc[0]['symbol'], 
-                                        action=obt.SELL_TO_CLOSE, quantity=1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetcall.iloc[0]['pcflag'], 
-                                        k=targetcall.iloc[0]['k'], expirationdate=targetcall.iloc[0]['expirationdate']))
+            sharestosell = self.account.positions.getstockquantityforticker(targetput.iloc[0]['ticker'])
+            optionpositions = self.account.positions.getoptionpositions(targetput.iloc[0]['ticker'])
+            if optionpositions:
+                optionsymbol = list(optionpositions.keys())[0]
+                optionstosell = self.account.positions.getoptionquantity(targetput.iloc[0]['ticker'], optionsymbol)
                 theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetput.iloc[0]['symbol'], 
-                                        action=obt.SELL_TO_CLOSE, quantity=1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetput.iloc[0]['pcflag'], 
+                                        action=obt.SELL_TO_CLOSE, quantity=+1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetput.iloc[0]['pcflag'], 
                                         k=targetput.iloc[0]['k'], expirationdate=targetput.iloc[0]['expirationdate']))
+                theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_STOCK, symbol=targetput.iloc[0]['ticker'], 
+                                        action=obt.SELL_TO_CLOSE, quantity=sharestosell))
                 doatrade=True
+            done=1
+            # if self.account.positions.getoptionquantity(targetput.iloc[0]['ticker'], targetcall.iloc[0]['symbol'])>0:
+            #     theseorders.append(obt.Order(tickerindex = 0, ticker=targetcall.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetcall.iloc[0]['symbol'], 
+            #                             action=obt.SELL_TO_CLOSE, quantity=1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetcall.iloc[0]['pcflag'], 
+            #                             k=targetcall.iloc[0]['k'], expirationdate=targetcall.iloc[0]['expirationdate']))
+            #     theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetput.iloc[0]['symbol'], 
+            #                             action=obt.SELL_TO_CLOSE, quantity=1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetput.iloc[0]['pcflag'], 
+            #                             k=targetput.iloc[0]['k'], expirationdate=targetput.iloc[0]['expirationdate']))
+            #     doatrade=True
 
         if doatrade:
             return theseorders

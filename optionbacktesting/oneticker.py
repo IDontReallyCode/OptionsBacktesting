@@ -54,3 +54,8 @@ class OneTicker():
     def getoptionsnapshot(self):
         thisday = str(self.currentdatetime.date())
         return self._optionts[self._optionts["date_eod"]==thisday]
+
+    
+    def getcurrentctockcandle(self):
+        thisday = str(self.currentdatetime.date())
+        return self._tickerts[self._tickerts["date_eod"]==thisday]
