@@ -24,16 +24,19 @@ The first step consist in deciding where in time do you want to start trading, b
     Priming the strategy will feed the initial set of data the strategy can use.
     The strategy is then applied and a signal "may" be generated.
 
-The second step is to execute
+The second step is to execute. Chronos has a DataFrame with a `['datetime']` column. Chronos will simply go through each entry in that column.
+
 Executing means:
+
 #### LOOP:
-1. Tell the market to move one step in time 
-   - => this returns the new candle.
-2. Tell the dealer to move one step in time, sends the new orders, if any, to update the list orders waiting. Also tell the dealer to try to execute the orders.
-   - => this updates the order queue and the list or orders executed
-   - => return the updated order queue
-3. Tell the account to update based on the order updates
-   - => return the new capital available
+1. Tell the `Market` to move one step in time by passing the next `['datetime']`
+   - This way, when the `Strategy` accesses data, it will have access to all the data "up until, and including, that date", and asking for athe option chain snapshot will give the latest OC snapshot available.
+2. Tell the `Dealer` execute orders.
+   - The `Dealer` has a list of waiting `Order`s.
+   - The `Dealer` loops through all waiting orders and tries to execute them.
+     - If an `Order` is executed, it is removed from the queue, and a `Trade` is created
+3. Tell the `Account` to update based on the `Trade`s 
+   - 
 4. Update the strategy with the new candle, tell the strategy to update, 
    - => return new orders, if any.
 
@@ -58,7 +61,7 @@ The DataFrame "MUST" be fed with these columns
 
 The dataFrame "MUST" be fed with these columns
 
-["date_eod", "datetime", "ticker", "pcflag", "k", "dte", "expirationdate", "bid", "ask", "bid_size", "ask_size", "openinterest", "volume"]
+["date_eod", "datetime", "optionsymbol", "ticker", "pcflag", "k", "dte", "expirationdate", "bid", "ask", "bid_size", "ask_size", "openinterest", "volume"]
 
 #### *IMPORTANT*
 Data should be sorted by pcflag, k, dte
