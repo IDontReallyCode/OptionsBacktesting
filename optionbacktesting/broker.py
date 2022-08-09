@@ -236,7 +236,7 @@ class Dealer():
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     tradeprice = thisoption['ask'].iloc[0]
                     cashflow = -tradeprice*thisorder.quantity*100
-                    positionchange = {'ticker':thisorder.ticker, 'quantity':thisorder.quantity, 'assettype':ASSET_TYPE_OPTION,
+                    positionchange = {'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
                                      
@@ -263,7 +263,7 @@ class Dealer():
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     tradeprice = thisoption['bid'].iloc[0]
                     cashflow = +tradeprice*thisorder.quantity*100
-                    positionchange = {'ticker':thisorder.ticker, 'quantity':thisorder.quantity, 'assettype':ASSET_TYPE_OPTION,
+                    positionchange = {'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)

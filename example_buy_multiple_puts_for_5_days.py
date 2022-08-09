@@ -45,19 +45,19 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                                     action=obt.BUY_TO_OPEN, quantity=+1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetoption.iloc[0]['pcflag'], 
                                     k=targetoption.iloc[0]['k'], expirationdate=targetoption.iloc[0]['expirationdate'])
             doatrade=True
-        elif self.marketdata.currentdatetime.weekday()>=0:
+        elif self.marketdata.currentdatetime.weekday()==0:
             # Friday has passed, we put an order in for next Monday, buy a put of 14+ dte
             thisorder = obt.Order(tickerindex = 0, ticker=targetoption.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetoption.iloc[0]['symbol'], 
                                     action=obt.BUY_TO_OPEN, quantity=+2, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetoption.iloc[0]['pcflag'], 
                                     k=targetoption.iloc[0]['k'], expirationdate=targetoption.iloc[0]['expirationdate'])
             doatrade=True
-        elif self.marketdata.currentdatetime.weekday()>=1:
+        elif self.marketdata.currentdatetime.weekday()==1:
             # Friday has passed, we put an order in for next Monday, buy a put of 14+ dte
             thisorder = obt.Order(tickerindex = 0, ticker=targetoption.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetoption.iloc[0]['symbol'], 
                                     action=obt.BUY_TO_OPEN, quantity=+3, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetoption.iloc[0]['pcflag'], 
                                     k=targetoption.iloc[0]['k'], expirationdate=targetoption.iloc[0]['expirationdate'])
             doatrade=True
-        elif self.marketdata.currentdatetime.weekday()>=2:
+        elif self.marketdata.currentdatetime.weekday()==2:
             # Friday has passed, we put an order in for next Monday, buy a put of 14+ dte
             thisorder = obt.Order(tickerindex = 0, ticker=targetoption.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetoption.iloc[0]['symbol'], 
                                     action=obt.BUY_TO_OPEN, quantity=+4, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetoption.iloc[0]['pcflag'], 
