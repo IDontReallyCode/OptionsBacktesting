@@ -12,12 +12,13 @@ ORDER_TYPE_LIMIT = 1
 ORDER_TYPE_STOP = 2
 
 BUY_TO_OPEN = 1
-BUY_TO_CLOSE = 2
+BUY_TO_CLOSE = 1
 SELL_TO_OPEN = -1
-SELL_TO_CLOSE = -2
+SELL_TO_CLOSE = -1
+# TODO, for now a BUY is a BUY, to open or close.
 
 MARGINTYPE_NONE = 0         # No margin calculated  (In this basic mode, even when shorting a naked call, no margin is calculated)
-# TODO MARGINTYPE_TDA = 1          # Follow the guide here : https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
+MARGINTYPE_TDA = 1          # Follow the guide here : https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
 # TODO MARGINTYPE_PORTFOLIO = 2    # Use a portfolio margin approach based on risk
 
 
@@ -34,23 +35,27 @@ class Order():
             - asset type: {stock=0, option=1}
             - position: {long=1, short=-1}
             - quantity: int
-            - type: {market=0, limit=1, stop=2}
+            - ordertype: {market=0, limit=1, stop=2}
             - triggerprice: float
+            - put call flag
+            - strike k
+            - expiration date
     """
-    def __init__(self, tickerindex:int, ticker:str, assettype:int, symbol: str, action:int, quantity:int, 
-                 ordertype:int = ORDER_TYPE_MARKET, triggerprice:int = 0, pcflag:int = 1, k:float = 0, expirationdate:int = 0
+    def __init__(self, tickerindex:int, ticker:str, assettype:int, symbol: str, action:int, quantity:int,
+                 tickerprice:float = 0.0, ordertype:int = ORDER_TYPE_MARKET, triggerprice:int = 0, pcflag:int = 1, k:float = 0, expirationdate:int = 0
                  ) -> None:
-        self.tickerindex = tickerindex
-        self.ticker = ticker
-        self.assettype = assettype
-        self.symbol = symbol
-        self.action = action
-        self.quantity = quantity
-        self.ordertype = ordertype
-        self.triggerprice = triggerprice
-        self.pcflag = pcflag
-        self.k = k
-        self.expirationdate = expirationdate
+        self.tickerindex = tickerindex              # User needs to know the order in which the tickers are loaded
+        self.ticker = ticker                        # Ticker string for reference purpose, and dictionary key search
+        self.tickerprice = tickerprice              # Required for margin calculation of options
+        self.assettype = assettype                  # ASSET_TYPE_STOCK or ASSET_TYPE_OPTION
+        self.symbol = symbol                        # ticker string for stock, the option symbol for options. Required for dictionary key search
+        self.action = action                        # BUY or SELL
+        self.quantity = quantity                    # no need to explain that one in details.
+        self.ordertype = ordertype                  # Market, Limit, Stop
+        self.triggerprice = triggerprice            # trigger price for Limit and Stop. Not used for Market orders
+        self.pcflag = pcflag                        # Put Call Flag for option
+        self.k = k                                  # Strike of option
+        self.expirationdate = expirationdate        # expiration date of option
 
 
 
@@ -197,7 +202,7 @@ class Dealer():
     #     return self.currentdatetime
         
 
-    def sendorder(self, orderlist:list):
+    def sendorder(self, orderlist:list[Order]):
         """
             This is the method through which a strategy sends an order to the dealer to execute
         """
@@ -225,7 +230,7 @@ class Dealer():
     #     # pass
 
 
-    def gothroughorders(self):
+    def gothroughorders(self)->list[Trade]:
         """
             Takes the list of 
         """
@@ -246,7 +251,7 @@ class Dealer():
             return None
 
 
-    def checkorder(self, thisorder):
+    def checkorder(self, thisorder:Order)->Trade:
         """
             For stocks, at least for now, trade occurs at Open price of the candle
                 Remember that the trade occurs in the candle following the timestep when the order was place.
@@ -257,39 +262,47 @@ class Dealer():
         trade = None
         if thisorder.action==BUY_TO_OPEN:
             if thisorder.assettype==ASSET_TYPE_OPTION:
+                dobuy=False
                 if thisorder.ordertype==ORDER_TYPE_MARKET:
+                    dobuy=True
+                elif thisorder.ordertype==ORDER_TYPE_LIMIT:
+                    if tradeprice<=thisorder.triggerprice:
+                        dobuy=True
+                elif thisorder.ordertype==ORDER_TYPE_STOP:
+                    if tradeprice>=thisorder.triggerprice:
+                        dobuy=True
+                else:
+                    raise("What type of order are you trying to do? Use the pre-determined constants")
+                
+                if dobuy:
                     optionchain = self.market.tickerlist[thisorder.tickerindex].getoptionsnapshot()
                     thisoption = optionchain[(optionchain['pcflag']==thisorder.pcflag) 
                                             & (optionchain['k']==thisorder.k) 
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     tradeprice = thisoption['ask'].iloc[0]
-                    cashflow = -tradeprice*thisorder.quantity*100
-                    positionchange = {'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_OPTION,
-                                        'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
-                                        'symbol':thisorder.symbol}
-                                     
-                    trade = Trade(self.market.currentdatetime, positionchange, cashflow)
+
+            elif thisorder.assettype==ASSET_TYPE_STOCK:
+                candle = self.market.tickerlist[thisorder.tickerindex].getcurrentctockcandle()
+                tradeprice = candle['open'].iloc[0]
+                dobuy = False
+                if thisorder.ordertype==ORDER_TYPE_MARKET:
+                    dobuy=True
                 elif thisorder.ordertype==ORDER_TYPE_LIMIT:
-                    raise("this order type is not coded yet.")
+                    if tradeprice<=thisorder.triggerprice:
+                        dobuy=True
                 elif thisorder.ordertype==ORDER_TYPE_STOP:
-                    raise("this order type is not coded yet.")
+                    if tradeprice>=thisorder.triggerprice:
+                        dobuy=True
                 else:
                     raise("What type of order are you trying to do? Use the pre-determined constants")
-            elif thisorder.assettype==ASSET_TYPE_STOCK:
-                if thisorder.ordertype==ORDER_TYPE_MARKET:
-                    candle = self.market.tickerlist[thisorder.tickerindex].getcurrentctockcandle()
-                    tradeprice = candle['open'].iloc[0]
+
+                if dobuy:
                     cashflow = -tradeprice*thisorder.quantity
                     positionchange = {'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
                                      
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
-                elif thisorder.ordertype==ORDER_TYPE_LIMIT:
-                    raise("this order type is not coded yet.")
-                elif thisorder.ordertype==ORDER_TYPE_STOP:
-                    raise("this order type is not coded yet.")
-                else:
-                    raise("What type of order are you trying to do? Use the pre-determined constants")
+
             else:
                 raise("What in the actual ?")
             
@@ -301,43 +314,56 @@ class Dealer():
 
         elif thisorder.action==SELL_TO_CLOSE:
             if thisorder.assettype==ASSET_TYPE_OPTION:
+                optionchain = self.market.tickerlist[thisorder.tickerindex].getoptionsnapshot()
+                thisoption = optionchain[(optionchain['pcflag']==thisorder.pcflag) 
+                                        & (optionchain['k']==thisorder.k) 
+                                        & (optionchain['expirationdate']==thisorder.expirationdate)]
+                tradeprice = thisoption['bid'].iloc[0]
+
+                dosell = False
                 if thisorder.ordertype==ORDER_TYPE_MARKET:
-                    optionchain = self.market.tickerlist[thisorder.tickerindex].getoptionsnapshot()
-                    thisoption = optionchain[(optionchain['pcflag']==thisorder.pcflag) 
-                                            & (optionchain['k']==thisorder.k) 
-                                            & (optionchain['expirationdate']==thisorder.expirationdate)]
-                    tradeprice = thisoption['bid'].iloc[0]
+                    dobuy=True
+                elif thisorder.ordertype==ORDER_TYPE_LIMIT:
+                    if tradeprice>=thisorder.triggerprice:
+                        dobuy=True
+                elif thisorder.ordertype==ORDER_TYPE_STOP:
+                    if tradeprice<=thisorder.triggerprice:
+                        dobuy=True
+                else:
+                    raise("What type of order are you trying to do? Use the pre-determined constants")
+                
+                if dosell:
                     cashflow = +tradeprice*thisorder.quantity*100
                     positionchange = {'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
+
+            elif thisorder.assettype==ASSET_TYPE_STOCK:
+                candle = self.market.tickerlist[thisorder.tickerindex].getcurrentctockcandle()
+                tradeprice = candle['open'].iloc[0]
+
+                dosell = False
+                if thisorder.ordertype==ORDER_TYPE_MARKET:
+                    dobuy=True
                 elif thisorder.ordertype==ORDER_TYPE_LIMIT:
-                    raise("this order type is not coded yet.")
+                    if tradeprice>=thisorder.triggerprice:
+                        dobuy=True
                 elif thisorder.ordertype==ORDER_TYPE_STOP:
-                    raise("this order type is not coded yet.")
+                    if tradeprice<=thisorder.triggerprice:
+                        dobuy=True
                 else:
                     raise("What type of order are you trying to do? Use the pre-determined constants")
-            elif thisorder.assettype==ASSET_TYPE_STOCK:
-                if thisorder.ordertype==ORDER_TYPE_MARKET:
-                    candle = self.market.tickerlist[thisorder.tickerindex].getcurrentctockcandle()
-                    tradeprice = candle['open'].iloc[0]
+
+                if dosell:
                     cashflow = +tradeprice*thisorder.quantity
                     positionchange = {'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
                                      
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
-                elif thisorder.ordertype==ORDER_TYPE_LIMIT:
-                    raise("this order type is not coded yet.")
-                elif thisorder.ordertype==ORDER_TYPE_STOP:
-                    raise("this order type is not coded yet.")
-                else:
-                    raise("What type of order are you trying to do? Use the pre-determined constants")
+
             else:
                 raise("What in the actual ?")
-                
-
-            
 
         return trade
     
@@ -386,10 +412,31 @@ class Account():
     def margincostoftrade(self, tradedetails:dict)-> float:
         """
             Since this class will have what it takes to deal with margins, the methods to know the margin of a trade will be right in here.
+            
+            From: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
+            Uncovered equity options
+                Because writing uncovered—or naked—options represents greater risk of loss, the margin account requirements are higher. The writing
+                of uncovered puts and calls requires an initial deposit and maintenance of the greatest of the following three formulas:
+                a) 20% of the underlying stock²⁷ less the out-of-the-money amount, if any, plus 100% of the current market value of the option(s).
+                b) For calls, 10% of the market value of the underlying stock PLUS the premium value. For puts, 10% of the exercise value of the
+                underlying stock PLUS the premium value.
+                or
+                c) $50 per contract plus 100% of the premium.
         """
-        if self.margintype==0:
+        if self.margintype==MARGINTYPE_NONE:
             return 0.0
-        pass
+        elif self.margintype==MARGINTYPE_TDA:
+            # here is some old code I can use 
+            OTM = npspot[0,0] - Merged[['k']].to_numpy()
+            OTM[OTM<0] = 0
+            Margin = np.zeros((len(OTM),3))
+            Margin[:,0] = (100 * 0.20 * npspot[0,0] + Merged[['ask']].to_numpy() - OTM).T
+            Margin[:,1] = (100 * 0.10 * Merged[['k']].to_numpy() + Merged[['ask']].to_numpy()).T
+            Margin[:,2] = (50 + Merged[['ask']].to_numpy()).T
+            return 0
+        else:
+            return 0
+
 
 
     def priming(self, currentdatetime:pd.Timestamp):
