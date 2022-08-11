@@ -56,5 +56,6 @@ class Strategy(ABC):
         self.waitingorders = marketfeedback
         self.accountfeedback = accountfeedback
         theseorders = []
+        doatrade = False
         return theseorders
         # pass
