@@ -272,7 +272,7 @@ class Dealer():
                     if tradeprice>=thisorder.triggerprice:
                         dobuy=True
                 else:
-                    raise("What type of order are you trying to do? Use the pre-determined constants")
+                    raise Exception("What type of order are you trying to do? Use the pre-determined constants")
                 
                 if dobuy:
                     optionchain = self.market.tickerlist[thisorder.tickerindex].getoptionsnapshot()
@@ -294,7 +294,7 @@ class Dealer():
                     if tradeprice>=thisorder.triggerprice:
                         dobuy=True
                 else:
-                    raise("What type of order are you trying to do? Use the pre-determined constants")
+                    raise Exception("What type of order are you trying to do? Use the pre-determined constants")
 
                 if dobuy:
                     cashflow = -tradeprice*thisorder.quantity
@@ -304,7 +304,7 @@ class Dealer():
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
 
             else:
-                raise("What in the actual ?")
+                raise Exception("What in the actual ?")
             
         elif thisorder.action==BUY_TO_CLOSE:
             pass
@@ -330,7 +330,7 @@ class Dealer():
                     if tradeprice<=thisorder.triggerprice:
                         dobuy=True
                 else:
-                    raise("What type of order are you trying to do? Use the pre-determined constants")
+                    raise Exception("What type of order are you trying to do? Use the pre-determined constants")
                 
                 if dosell:
                     cashflow = +tradeprice*thisorder.quantity*100
@@ -353,7 +353,7 @@ class Dealer():
                     if tradeprice<=thisorder.triggerprice:
                         dobuy=True
                 else:
-                    raise("What type of order are you trying to do? Use the pre-determined constants")
+                    raise Exception("What type of order are you trying to do? Use the pre-determined constants")
 
                 if dosell:
                     cashflow = +tradeprice*thisorder.quantity
@@ -363,7 +363,7 @@ class Dealer():
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
 
             else:
-                raise("What in the actual ?")
+                raise Exception("What in the actual ?")
 
         return trade
     
