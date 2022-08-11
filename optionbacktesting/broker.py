@@ -427,12 +427,12 @@ class Account():
             return 0.0
         elif self.margintype==MARGINTYPE_TDA:
             # here is some old code I can use 
-            OTM = npspot[0,0] - Merged[['k']].to_numpy()
-            OTM[OTM<0] = 0
-            Margin = np.zeros((len(OTM),3))
-            Margin[:,0] = (100 * 0.20 * npspot[0,0] + Merged[['ask']].to_numpy() - OTM).T
-            Margin[:,1] = (100 * 0.10 * Merged[['k']].to_numpy() + Merged[['ask']].to_numpy()).T
-            Margin[:,2] = (50 + Merged[['ask']].to_numpy()).T
+            # OTM = npspot[0,0] - Merged[['k']].to_numpy()
+            # OTM[OTM<0] = 0
+            # Margin = np.zeros((len(OTM),3))
+            # Margin[:,0] = (100 * 0.20 * npspot[0,0] + Merged[['ask']].to_numpy() - OTM).T
+            # Margin[:,1] = (100 * 0.10 * Merged[['k']].to_numpy() + Merged[['ask']].to_numpy()).T
+            # Margin[:,2] = (50 + Merged[['ask']].to_numpy()).T
             return 0
         else:
             return 0

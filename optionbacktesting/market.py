@@ -8,7 +8,7 @@ class Market():
     """
         The market class will contain the data for multiple tickers
     """
-    def __init__(self, tickerlist:list, tickernames:list, ExtraData:list, ExtraNames:list) -> None:
+    def __init__(self, tickerlist:list, tickernames:list, ExtraData:list = [], ExtraNames:list = []) -> None:
         """
             After loading the data of one or more tickers (including the option chains), we "package" then toghether into one object that we call "market"
 
