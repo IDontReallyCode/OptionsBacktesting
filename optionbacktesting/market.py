@@ -19,6 +19,8 @@ class Market():
             Internally, self.tickerlist[0] will be used.
             However, the user, when creating their Strategy class/object, they will be able to access the data using the ticker name directly
         """
+        if type(tickerlist) is not list:
+            raise Exception("Please submit as a list, even it there is only one ticker. I am too lazy to convert your arguments!")
         if not len(tickerlist) == len(tickernames):
             print("WTF is wrong with you")
             pass
