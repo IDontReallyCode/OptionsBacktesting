@@ -8,13 +8,14 @@ _Disclaimer: I never learned to code in Python. Rather, I figure out a way. Don'
 ## The outline is this:
 
 - Get the entire dataset you need for one or more tickers, including the option chains, at some specific time interval. It can be daily, 1 min, 10 min, etc.
-- Initialize the oneticker classes with the datasets
+- Initialize the `OneTicker` classes with the datasets
   - To simplify "MY" life, I will start by dealing with the data format that comes out of the TDA API
-- Once all oneticker have been initialized, initialize the market class
-- Initialize the account with a deposit, a margin type, ?
-- Ititialize the broker/dealer with the marketdata
-- Initialize the strategy with nothing yet
-- Initialize chronos, the god of time, with marketdata, the account, the broker/dealer, the strategy
+- Once all `OneTicker` have been initialized, initialize the `Market` class
+- Initialize the `Account` with a deposit, a margin type, ?
+- Ititialize the `Dealer` with the `Market` data
+- Create your own `MyStrategy` class based on `optionbacktesting.abstractstrategy.Strategy`
+- Initialize your `MyStrategy`
+- Initialize `Chronos`, the god of time, with `Market`, the `Account`, the `Dealer`, the `MyStrategy`
 
 
 
