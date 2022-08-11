@@ -138,18 +138,18 @@ def main():
     uniquetimesteps['datetime'] = pd.to_datetime(uniquetimesteps['datetime'])
     # find the time step where the option data starts.
     firstoptiondate = optiondtaCLF.iloc[0]['date_eod']
-
+    initialdatetime = uniquetimesteps[uniquetimesteps['datetime']>firstoptiondate].index.tolist()[0]
 
     tickerCLF = obt.OneTicker(tickername='CLF', tickertimeseries=stockdataCLF, optionchaintimeseries=optiondtaCLF)
     
-    mymarket = obt.Market((tickerCLF),('CLF'))
+    mymarket = obt.Market([tickerCLF],['CLF'])
     mydealer = obt.Dealer(marketdata=mymarket)
     mystrategy = MyStrategy()
     mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquetimesteps)
 
-    # mychronos.primingthestrategyat(10)
+    mychronos.primingthestrategyat(initialdatetime)
 
-    # mychronos.execute()
+    mychronos.execute()
 
     pausehere=1
 
