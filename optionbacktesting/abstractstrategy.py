@@ -55,7 +55,7 @@ class Strategy(ABC):
         # [TODO] Check what we actually need here and not
         self.waitingorders = marketfeedback
         self.accountfeedback = accountfeedback
-        theseorders = []
-        doatrade = False
-        return theseorders
+        self.theseorders = []
+        self.doatrade = False
+        return self.theseorders
         # pass

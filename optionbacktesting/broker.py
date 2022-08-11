@@ -72,12 +72,12 @@ class Trade():
 
 class Positions():
     """
-    mypositions = {'tic1': {'equity': {'symbol': 'AMD', 'quantity': 5}, 
-                            'options': {'optionsymbol1': {'quantity': 5, 'pcflag': 0, 'k':10.0, 'expirationdate':'2000-01-01'}, 
-                                    'optionsymbol2': {'quantity': 5, 'pcflag': 0, 'k':20.0, 'expirationdate':'2000-01-01'} }},
-                    'tic2': {'equity':{'symbol': 'AAPL', 'quantity': 5}},
-                    'tic2': {'options':{'optionsymbol1': {'quantity': 5, 'pcflag': 0, 'k':10.0, 'expirationdate':'2000-01-01'}, 
-                                    'optionsymbol2': {'quantity': 5, 'pcflag': 0, 'k':20.0, 'expirationdate':'2000-01-01'} }}
+    mypositions = {'tic1': {'equity': {'symbol': 'AMD', 'quantity': 5, 'tradeprice':18.56}, 
+                            'options': {'optionsymbol1': {'quantity': 5, 'pcflag': 0, 'k':10.0, 'expirationdate':'2000-01-01', 'tradeprice':5.56}, 
+                                    'optionsymbol2': {'quantity': 5, 'pcflag': 0, 'k':20.0, 'expirationdate':'2000-01-01', 'tradeprice':1.56} }},
+                    'tic2': {'equity':{'symbol': 'AAPL', 'quantity': 5, 'tradeprice':154.23}},
+                    'tic3': {'options':{'optionsymbol1': {'quantity': 5, 'pcflag': 0, 'k':10.0, 'expirationdate':'2000-01-01', 'tradeprice':0.56}, 
+                                    'optionsymbol2': {'quantity': 5, 'pcflag': 0, 'k':20.0, 'expirationdate':'2000-01-01', 'tradeprice':1.56} }}
                     }
     """
     def __init__(self) -> None:
@@ -85,36 +85,59 @@ class Positions():
         pass
 
 
-    def changestockposition(self, ticker:str, quantity:int):
+    def changestockposition(self, ticker:str, quantity:int, tradeprice:float):
         # for stocks
         if ticker not in self.mypositions:
-            self.mypositions[ticker] = {'equity': {'symbol':ticker, 'quantity':quantity}}
+            self.mypositions[ticker] = {'equity': {'symbol':ticker, 'quantity':quantity, 'tradeprice':tradeprice}}
         else:
             if 'equity' in self.mypositions[ticker]:
-                self.mypositions[ticker]['equity']['quantity']+=quantity
-                if self.mypositions[ticker]['equity']['quantity']==0:
-                    self.mypositions[ticker].pop('equity')
+                if self.mypositions[ticker]['equity']['quantity']*quantity<0:
+                    self.mypositions[ticker]['equity']['quantity']+=quantity
+                    if self.mypositions[ticker]['equity']['quantity']==0:
+                        self.mypositions[ticker].pop('equity')
+                else:
+                    currentquantity = self.mypositions[ticker]['equity']['quantity']
+                    newaveragetradeprice = (currentquantity*self.mypositions[ticker]['equity']['tradeprice'] 
+                                            + quantity*tradeprice)/(currentquantity+quantity)
+                    self.mypositions[ticker]['equity']['quantity']+=quantity
+                    self.mypositions[ticker]['equity']['tradeprice']=newaveragetradeprice
             else:
                 self.mypositions[ticker]['equity'] = {'symbol':ticker, 'quantity':quantity}
 
         return self.mypositions
 
 
-    def changeoptionposition(self, ticker:str, quantity:int, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp):
+    def changeoptionposition(self, ticker:str, quantity:int, tradeprice:float, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp):
         # for options
         if ticker not in self.mypositions:
             # if ticker is not there at all
-            self.mypositions[ticker] = {'options': {symbol: {'quantity': quantity, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}}}
+            self.mypositions[ticker] = {'options': {symbol: {'quantity': quantity, 'tradeprice':tradeprice, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate, 'tradeprice':tradeprice}}}
         else:
             if 'options' in self.mypositions[ticker]:
                 if symbol in self.mypositions[ticker]['options']:
-                    self.mypositions[ticker]['options'][symbol]['quantity']+=quantity
-                    if self.mypositions[ticker]['options'][symbol]['quantity']==0:
-                        self.mypositions[ticker]['options'].pop(symbol)
+                    # That specific option is already in the portfolio, we need to update the quantity and trade price
+                    # first we check if we are "adding" to the position, or taking some off.
+                    if self.mypositions[ticker]['options'][symbol]['quantity']*quantity<0: # different sign, so we just adjust the quantity
+                        self.mypositions[ticker]['options'][symbol]['quantity']+=quantity
+                        if self.mypositions[ticker]['options'][symbol]['quantity']==0:
+                            self.mypositions[ticker]['options'].pop(symbol)
+                    else: # same sign, we are either getting more positive or more negative. either way we need to adjust the average tradeprice.
+                        currentquantity = self.mypositions[ticker]['options'][symbol]['quantity']
+                        if (currentquantity+quantity)==0:
+                            raise Exception("We should not get here. I leave the code, just to check. The if should be removed.")
+                            # self.mypositions[ticker]['options'].pop(symbol)
+                        else:
+                            newaveragetradeprice = (currentquantity*self.mypositions[ticker]['options'][symbol]['tradeprice'] 
+                                                    + quantity*tradeprice)/(currentquantity+quantity)
+                            self.mypositions[ticker]['options'][symbol]['quantity']+=quantity
+                            self.mypositions[ticker]['options'][symbol]['tradeprice']=newaveragetradeprice
+                            if self.mypositions[ticker]['options'][symbol]['quantity']==0:
+                                raise Exception("We should not get here. I leave the code, just to check. The if should be removed.")
+                                # self.mypositions[ticker]['options'].pop(symbol)
                 else:
-                    self.mypositions[ticker]['options'][symbol] = {'quantity': quantity, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}
+                    self.mypositions[ticker]['options'][symbol] = {'quantity': quantity, 'tradeprice':tradeprice, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}
             else:
-                self.mypositions[ticker]['options'] = {symbol: {'quantity': quantity, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}}
+                self.mypositions[ticker]['options'] = {symbol: {'quantity': quantity, 'tradeprice':tradeprice, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}}
         return self.mypositions
 
 
@@ -137,7 +160,7 @@ class Positions():
             return {}
 
 
-    def getoptionsymbols(self, ticker:str):
+    def getoptionsymbols(self, ticker:str)->list[str]:
         if ticker in self.mypositions:
             if 'options' in self.mypositions[ticker]:
                 return list[self.mypositions[ticker]['options'].keys()]
@@ -147,7 +170,7 @@ class Positions():
             return []
 
 
-    def getoptionquantity(self, ticker:str, symbol:str):
+    def getoptionquantity(self, ticker:str, symbol:str)->int:
         if ticker in self.mypositions:
             if 'options' in self.mypositions[ticker]:
                 if symbol in self.mypositions[ticker]['options']:
@@ -160,18 +183,18 @@ class Positions():
             return 0
 
 
-    def getpositionsofticker(self, ticker):
+    def getpositionsofticker(self, ticker)->dict:
         if ticker in self.mypositions:
             return self.mypositions[ticker]  
         else:
             return {}   
 
     
-    def getpositions(self):
+    def getpositions(self)->dict:
         return self.mypositions
 
     
-    def getstockquantityforticker(self, ticker):
+    def getstockquantityforticker(self, ticker)->int:
         if ticker in self.mypositions:
             if 'equity' in self.mypositions[ticker]:
                 return self.mypositions[ticker]['equity']['quantity']
@@ -282,7 +305,7 @@ class Dealer():
                     tradeprice = thisoption['ask'].iloc[0]
 
             elif thisorder.assettype==ASSET_TYPE_STOCK:
-                candle = self.market.tickerlist[thisorder.tickerindex].getcurrentctockcandle()
+                candle = self.market.tickerlist[thisorder.tickerindex].getcurrentstockcandle()
                 tradeprice = candle['open'].iloc[0]
                 dobuy = False
                 if thisorder.ordertype==ORDER_TYPE_MARKET:
@@ -340,7 +363,7 @@ class Dealer():
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
 
             elif thisorder.assettype==ASSET_TYPE_STOCK:
-                candle = self.market.tickerlist[thisorder.tickerindex].getcurrentctockcandle()
+                candle = self.market.tickerlist[thisorder.tickerindex].getcurrentstockcandle()
                 tradeprice = candle['open'].iloc[0]
 
                 dosell = False

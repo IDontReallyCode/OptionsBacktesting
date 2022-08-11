@@ -74,9 +74,12 @@ class Market():
 
     def timepass(self, currentdatetime:pd.Timestamp) -> list:
         """
-            Will get the next timestep data from each ticker and return a list with the data
+            update the new datetime for the market, but also each ticker
         """
         self.currentdatetime = currentdatetime
+        for index, eachtick in enumerate(self.tickernames):
+            self.tickerlist[index].settime(currentdatetime)
+
 
         return self.currentdatetime
 
