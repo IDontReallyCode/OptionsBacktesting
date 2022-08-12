@@ -128,6 +128,6 @@ When trading stock where the data is OHLC, we trade at Open (of following candle
 - option :: low :: Deal with exercise of options at maturity
 - margin :: high :: estimate the margin on a short single option
 - margin :: med :: recognize the margin on known spreads, like verticals
-- 
+- account :: med :: update the capital and the position values at each time steps to be able to assess the strategy standard deviation.
 
 
