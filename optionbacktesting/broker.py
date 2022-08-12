@@ -31,18 +31,20 @@ class Order():
         [FOR NOW AT LEAST]
 
         An order will be:
-            - ticker: str
-            - asset type: {stock=0, option=1}
-            - position: {long=1, short=-1}
-            - quantity: int
-            - ordertype: {market=0, limit=1, stop=2}
-            - triggerprice: float
-            - put call flag
+            - tickerindex: int      {the index number of the asset, makes things easier for the coding}
+            - ticker: str           {Get it from Market.tickernames[tickerindex]}
+            - asset type:           {ASSET_TYPE_STOCK = 0, ASSET_TYPE_OPTION = 1}
+            - position:             {BUY_TO_OPEN = 1, SELL_TO_CLOSE = -1}
+            - quantity: int 
+            - ordertype:            {ORDER_TYPE_MARKET = 0, ORDER_TYPE_LIMIT = 1, ORDER_TYPE_STOP = 2}
+            - tickerprice: float    {Required for margin calculation when shorting options}
+            - triggerprice: float   {for contingent orders}
+            - put call flag         {put=0, call=1}
             - strike k
             - expiration date
     """
     def __init__(self, tickerindex:int, ticker:str, assettype:int, symbol: str, action:int, quantity:int,
-                 tickerprice:float = 0.0, ordertype:int = ORDER_TYPE_MARKET, triggerprice:int = 0, pcflag:int = 1, k:float = 0, expirationdate:int = 0
+                 tickerprice:float = 0.0, ordertype:int = ORDER_TYPE_MARKET, triggerprice:float = 0.0, pcflag:int = 1, k:float = 0, expirationdate:str = ''
                  ) -> None:
         self.tickerindex = tickerindex              # User needs to know the order in which the tickers are loaded
         self.ticker = ticker                        # Ticker string for reference purpose, and dictionary key search
@@ -214,43 +216,17 @@ class Dealer():
             We initialize the broker/dealer with all the data
         """
         self.market = marketdata
-        self.market.resettimer()
         self.orderlistwaiting = []
         self.orderlistexecuted = []
         self.optiontradingcost = optiontradingcost
 
-
-    # def priming(self, currenttime:pd.Timestamp)->int:
-    #     self.currentdatetime = currenttime
-    #     return self.currentdatetime
-        
 
     def sendorder(self, orderlist:list[Order]):
         """
             This is the method through which a strategy sends an order to the dealer to execute
         """
         for eachorder in orderlist:
-            # if self.orderlistwaiting[0] is None:
-            #     self.orderlistwaiting[0] = eachorder
-            # else:
             self.orderlistwaiting.append(eachorder)
-
-        # done=1
-            # pass
-
-
-    # def stepforwardintime(self):
-    #     """
-    #         Step forward in time will get the lastest candle-bar, then go through the list of order_waiting and see whether any can be executed.
-    #     """
-
-    #     alltrades = []
-
-    #     for thisorder in self.orderlistwaiting:
-            
-
-    #     return alltrades        
-    #     # pass
 
 
     def gothroughorders(self)->list[Trade]:
@@ -284,8 +260,11 @@ class Dealer():
         """
         trade = None
         if thisorder.action==BUY_TO_OPEN:
+            dobuy=False
             if thisorder.assettype==ASSET_TYPE_OPTION:
-                dobuy=False
+                # -------
+                #       BUY OPTIONS
+                # -------
                 if thisorder.ordertype==ORDER_TYPE_MARKET:
                     dobuy=True
                 elif thisorder.ordertype==ORDER_TYPE_LIMIT:
@@ -302,12 +281,22 @@ class Dealer():
                     thisoption = optionchain[(optionchain['pcflag']==thisorder.pcflag) 
                                             & (optionchain['k']==thisorder.k) 
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
+                    # [TODO] This is where we allow for some flexibility in the how trades are executed
                     tradeprice = thisoption['ask'].iloc[0]
+                    positionchange = {'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
+                                        'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
+                                        'symbol':thisorder.symbol}                                     
+                    trade = Trade(datetime=self.market.currentdatetime, positionchange=positionchange, cashflow=cashflow)
 
             elif thisorder.assettype==ASSET_TYPE_STOCK:
+                # -------
+                #       BUY STOCK
+                # -------
                 candle = self.market.tickerlist[thisorder.tickerindex].getcurrentstockcandle()
+                # [TODO] This is where we allow for some flexibility in the how trades are executed
+                # [TODO] Adapt the behavior for contingent orders
                 tradeprice = candle['open'].iloc[0]
-                dobuy = False
+
                 if thisorder.ordertype==ORDER_TYPE_MARKET:
                     dobuy=True
                 elif thisorder.ordertype==ORDER_TYPE_LIMIT:
@@ -321,12 +310,11 @@ class Dealer():
 
                 if dobuy:
                     cashflow = -tradeprice*thisorder.quantity
-                    positionchange = {'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_STOCK,
+                    positionchange = {'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
-                                     
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
-
             else:
+                # Not a stock, not an option
                 raise Exception("What in the actual ?")
             
         elif thisorder.action==BUY_TO_CLOSE:
@@ -337,6 +325,9 @@ class Dealer():
 
         elif thisorder.action==SELL_TO_CLOSE:
             if thisorder.assettype==ASSET_TYPE_OPTION:
+                # -------
+                #       SELL OPTION
+                # -------
                 optionchain = self.market.tickerlist[thisorder.tickerindex].getoptionsnapshot()
                 thisoption = optionchain[(optionchain['pcflag']==thisorder.pcflag) 
                                         & (optionchain['k']==thisorder.k) 
@@ -357,12 +348,15 @@ class Dealer():
                 
                 if dosell:
                     cashflow = +tradeprice*thisorder.quantity*100
-                    positionchange = {'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_OPTION,
+                    positionchange = {'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
 
             elif thisorder.assettype==ASSET_TYPE_STOCK:
+                # -------
+                #       SELL STOCK
+                # -------
                 candle = self.market.tickerlist[thisorder.tickerindex].getcurrentstockcandle()
                 tradeprice = candle['open'].iloc[0]
 
@@ -380,9 +374,8 @@ class Dealer():
 
                 if dosell:
                     cashflow = +tradeprice*thisorder.quantity
-                    positionchange = {'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'assettype':ASSET_TYPE_STOCK,
+                    positionchange = {'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
-                                     
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
 
             else:
@@ -406,8 +399,10 @@ class Account():
     def __init__(self, deposit:float, margintype:int = MARGINTYPE_NONE, trackportfoliovalue:bool = False) -> None:
         self._capital = deposit
         self.margintype = margintype
-        self.margin = 0
+        self.margin = 0.0
         self.positions = Positions()
+        self.positionvalues = 0.0
+        self.positionvaluests = []
         self.startingtime = 0
         self.capitalts = []
         self.trackportfoliovalue = trackportfoliovalue
@@ -461,25 +456,31 @@ class Account():
             return 0
 
 
-
     def priming(self, currentdatetime:pd.Timestamp):
         self.startingtime = currentdatetime
         return self.startingtime
         
     
-    def trade(self, tradelist:list):
+    def update(self, tradelist:list[dict])->float:
+        """
+            Two tasks (for now):
+            1- record the trades from the tradelist
+        """
+        # 1- record the trades from tradelist
         for thistrade in tradelist:
             self.capital += thistrade.cashflow
             self.capitalts.append((thistrade.datetime, self.capital))
             # if we opened a new position, check if we already have a position like that, and add
             # if we closed a position, find the position and remove it
             if thistrade.positionchange['assettype']==ASSET_TYPE_OPTION:
-                self.positions.changeoptionposition(thistrade.positionchange['ticker'], thistrade.positionchange['quantity'],
-                                            thistrade.positionchange['symbol'], thistrade.positionchange['pcflag'], thistrade.positionchange['k'],
-                                            thistrade.positionchange['expirationdate'])
+                self.positions.changeoptionposition(thistrade.positionchange['ticker'], thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'],
+                                            symbol=thistrade.positionchange['symbol'], pcflag=thistrade.positionchange['pcflag'], k=thistrade.positionchange['k'],
+                                            expirationdate=thistrade.positionchange['expirationdate'])
             elif thistrade.positionchange['assettype']==ASSET_TYPE_STOCK:
-                self.positions.changestockposition(thistrade.positionchange['ticker'],thistrade.positionchange['quantity'])
-        
+                self.positions.changestockposition(ticker=thistrade.positionchange['ticker'], quantity=thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'])
+            else:
+                raise Exception('This makes no sense to end up here!')
+
         return self.capital
         
 

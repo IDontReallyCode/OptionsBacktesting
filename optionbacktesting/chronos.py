@@ -47,17 +47,35 @@ class Chronos():
         self.account.priming(self.currentdatetime)
         self.strategy.priming(self.market, self.account)
 
+
+    def _updatepositionvalues(self):
+        # loop through all positions and fetch the lastest market value
+        # [TODO] verify how the value of short positions affect the total value
+        totalpositionvalues = 0.0
+        for tickers in self.account.positions.mypositions:
+            for assettypes in self.account.positions.mypositions[tickers]:
+                if assettypes=='equity':
+                    lateststockcandle = self.market.__dict__[tickers].getcurrentstockcandle()
+                    totalpositionvalues += self.account.positions.mypositions[tickers]['equity']['quantity']*lateststockcandle.iloc[0]['close']
+                elif assettypes=='option':
+                    for symbols in self.account.positions.mypositions[tickers]['options']:
+                        latestoptionsymbolrecord = self.market.__dict__[tickers].getoptionsymbolsnapshot(symbols)
+                        done=1
+        self.account.positionvalues = totalpositionvalues
+        self.account.positionvaluests.append((self.market.currentdatetime, totalpositionvalues))
+        
         
     def execute(self):
         for timeindex in range(self.currenttimestep+1, self.totaltimesteps):
             self.market.timepass(self.chronology['datetime'].iloc[timeindex])
             dealerfeedback = self.dealer.gothroughorders()
             if dealerfeedback is not None:
-                accountfeedback = self.account.trade(dealerfeedback)
+                accountfeedback = self.account.update(dealerfeedback)
             else:
                 # TODO Check what else we could need here
                 accountfeedback = self.account.capital
             strategyfeedback = self.strategy.estimatestrategy(dealerfeedback, accountfeedback)
             
+            self._updatepositionvalues()
             self.dealer.sendorder(strategyfeedback)
         
