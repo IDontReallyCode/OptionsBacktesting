@@ -62,7 +62,8 @@ class Chronos():
                         latestoptionsymbolrecord = self.market.__dict__[tickers].getoptionsymbolsnapshot(symbols)
                         done=1
         self.account.positionvalues = totalpositionvalues
-        self.account.positionvaluests.append((self.market.currentdatetime, totalpositionvalues))
+        self.account.positionvaluests.append(totalpositionvalues)
+        self.account.totalvaluests.append(self.account.capital+totalpositionvalues)
 
         
     def execute(self):

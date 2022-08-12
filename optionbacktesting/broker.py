@@ -283,6 +283,7 @@ class Dealer():
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     # [TODO] This is where we allow for some flexibility in the how trades are executed
                     tradeprice = thisoption['ask'].iloc[0]
+                    cashflow = tradeprice*np.abs(thisorder.quantity)*100
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}                                     
@@ -309,7 +310,7 @@ class Dealer():
                     raise Exception("What type of order are you trying to do? Use the pre-determined constants")
 
                 if dobuy:
-                    cashflow = -tradeprice*thisorder.quantity
+                    cashflow = -tradeprice*np.abs(thisorder.quantity)
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
@@ -341,7 +342,7 @@ class Dealer():
                     raise Exception("What type of order are you trying to do? Use the pre-determined constants")
                 
                 if dosell:
-                    cashflow = +tradeprice*thisorder.quantity*100
+                    cashflow = +tradeprice*np.abs(thisorder.quantity)*100
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
@@ -367,7 +368,7 @@ class Dealer():
                     raise Exception("What type of order are you trying to do? Use the pre-determined constants")
 
                 if dosell:
-                    cashflow = +tradeprice*thisorder.quantity
+                    cashflow = +tradeprice*np.abs(thisorder.quantity)
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
@@ -397,6 +398,7 @@ class Account():
         self.positions = Positions()
         self.positionvalues = 0.0
         self.positionvaluests = []
+        self.totalvaluests = []
         self.startingtime = 0
         self.capitalts = []
         self.trackportfoliovalue = trackportfoliovalue
@@ -463,7 +465,7 @@ class Account():
         # 1- record the trades from tradelist
         for thistrade in tradelist:
             self.capital += thistrade.cashflow
-            self.capitalts.append((thistrade.datetime, self.capital))
+            self.capitalts.append(self.capital)
             # if we opened a new position, check if we already have a position like that, and add
             # if we closed a position, find the position and remove it
             if thistrade.positionchange['assettype']==ASSET_TYPE_OPTION:
@@ -473,7 +475,7 @@ class Account():
             elif thistrade.positionchange['assettype']==ASSET_TYPE_STOCK:
                 self.positions.changestockposition(tickerid=thistrade.positionchange['tickerid'] , ticker=thistrade.positionchange['ticker'], quantity=thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'])
             else:
-                raise Exception('This makes no sense to end up here!')
+                raise Exception('It makes no sense to end up here!')
 
         return self.capital
         

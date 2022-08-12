@@ -5,10 +5,11 @@
         Buy the stock day 1. hold.
 """
 
-import numpy as np
+# import numpy as np
 import pandas as pd
 import optionbacktesting as obt
-import datetime
+# import datetime
+import matplotlib.pyplot as plt
 
 from optionbacktesting.broker import ASSET_TYPE_STOCK, BUY_TO_OPEN
 
@@ -52,6 +53,11 @@ def main():
     mychronos.execute()
 
     print(myaccount.positions.mypositions)
+    plt.plot(uniquedaydates, myaccount.totalvaluests)
+    plt.show()
+    # plt.plot(uniquedaydates, myaccount.positionvaluests)
+    # plt.plot(uniquedaydates, stockdataCLF['close'])
+    # plt.show()
     pausehere=1
 
 
