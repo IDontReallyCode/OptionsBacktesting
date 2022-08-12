@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from .broker import Dealer, Account, Order
+from .broker import BUY_TO_CLOSE, ORDER_TYPE_MARKET, SELL_TO_CLOSE, Dealer, Account, Order, ASSET_TYPE_OPTION, ASSET_TYPE_STOCK
 # from .accounts import Account
 from .market import Market
 from .abstractstrategy import Strategy
@@ -90,10 +90,24 @@ class Chronos():
         for tickers in self.account.positions.mypositions:
             for assettypes in self.account.positions.mypositions[tickers]:
                 if assettypes=='equity':
-                    allclosingorders.append(Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
-                                    symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1))
+                    if self.account.positions.mypositions[tickers][assettypes]['quantity']>0:
+                        allclosingorders.append(Order(tickerindex=0, ticker=self.market.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+                                                        symbol=self.market.tickernames[0], action=SELL_TO_CLOSE, 
+                                                        quantity=-self.account.positions.mypositions[tickers][assettypes]['quantity'], 
+                                                        ordertype=ORDER_TYPE_MARKET))
+                    else:
+                        allclosingorders.append(Order(tickerindex=0, ticker=self.market.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+                                                        symbol=self.market.tickernames[0], action=BUY_TO_CLOSE, 
+                                                        quantity=-self.account.positions.mypositions[tickers][assettypes]['quantity'], 
+                                                        ordertype=ORDER_TYPE_MARKET))
                 elif assettypes=='option':
                     for symbols in self.account.positions.mypositions[tickers]['options']:
                         latestoptionsymbolrecord = self.market.__dict__[tickers].getoptionsymbolsnapshot(symbols)
-
+        
+        if len(allclosingorders)>0:
+            self.dealer.sendorder(allclosingorders)
+            dealerfeedback = self.dealer.gothroughorders()
+            if dealerfeedback is not None:
+                accountfeedback = self.account.update(dealerfeedback)
+            self._updatepositionvalues()
         

@@ -51,6 +51,7 @@ def main():
 
     mychronos.execute()
 
+    print(myaccount.positions.mypositions)
     pausehere=1
 
 

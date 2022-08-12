@@ -259,7 +259,7 @@ class Dealer():
             [TODO] create a function for getassetprice(), and in that function, allow other methods for trading prices.
         """
         trade = None
-        if thisorder.action==BUY_TO_OPEN:
+        if thisorder.action in [BUY_TO_OPEN, BUY_TO_CLOSE]:
             dobuy=False
             if thisorder.assettype==ASSET_TYPE_OPTION:
                 # -------
@@ -317,13 +317,7 @@ class Dealer():
                 # Not a stock, not an option
                 raise Exception("What in the actual ?")
             
-        elif thisorder.action==BUY_TO_CLOSE:
-            pass
-
-        elif thisorder.action==SELL_TO_OPEN:
-            pass
-
-        elif thisorder.action==SELL_TO_CLOSE:
+        elif thisorder.action in [SELL_TO_CLOSE, SELL_TO_OPEN]:
             if thisorder.assettype==ASSET_TYPE_OPTION:
                 # -------
                 #       SELL OPTION
@@ -362,13 +356,13 @@ class Dealer():
 
                 dosell = False
                 if thisorder.ordertype==ORDER_TYPE_MARKET:
-                    dobuy=True
+                    dosell=True
                 elif thisorder.ordertype==ORDER_TYPE_LIMIT:
                     if tradeprice>=thisorder.triggerprice:
-                        dobuy=True
+                        dosell=True
                 elif thisorder.ordertype==ORDER_TYPE_STOP:
                     if tradeprice<=thisorder.triggerprice:
-                        dobuy=True
+                        dosell=True
                 else:
                     raise Exception("What type of order are you trying to do? Use the pre-determined constants")
 
@@ -473,11 +467,11 @@ class Account():
             # if we opened a new position, check if we already have a position like that, and add
             # if we closed a position, find the position and remove it
             if thistrade.positionchange['assettype']==ASSET_TYPE_OPTION:
-                self.positions.changeoptionposition(thistrade.positionchange['ticker'], thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'],
+                self.positions.changeoptionposition(thistrade.positionchange['tickerid'], thistrade.positionchange['ticker'], thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'],
                                             symbol=thistrade.positionchange['symbol'], pcflag=thistrade.positionchange['pcflag'], k=thistrade.positionchange['k'],
                                             expirationdate=thistrade.positionchange['expirationdate'])
             elif thistrade.positionchange['assettype']==ASSET_TYPE_STOCK:
-                self.positions.changestockposition(tickerid=thistrade.positionchange['ticker'] , ticker=thistrade.positionchange['ticker'], quantity=thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'])
+                self.positions.changestockposition(tickerid=thistrade.positionchange['tickerid'] , ticker=thistrade.positionchange['ticker'], quantity=thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'])
             else:
                 raise Exception('This makes no sense to end up here!')
 
