@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from .broker import Dealer, Account
+from .broker import Dealer, Account, Order
 # from .accounts import Account
 from .market import Market
 from .abstractstrategy import Strategy
@@ -63,9 +63,15 @@ class Chronos():
                         done=1
         self.account.positionvalues = totalpositionvalues
         self.account.positionvaluests.append((self.market.currentdatetime, totalpositionvalues))
-        
+
         
     def execute(self):
+        """
+            Loops over all time steps in self.chronology
+                deals with everything in chronological orders
+            
+            Then closes all positions
+        """
         for timeindex in range(self.currenttimestep+1, self.totaltimesteps):
             self.market.timepass(self.chronology['datetime'].iloc[timeindex])
             dealerfeedback = self.dealer.gothroughorders()
@@ -78,4 +84,16 @@ class Chronos():
             
             self._updatepositionvalues()
             self.dealer.sendorder(strategyfeedback)
+        
+        # closing all positions
+        allclosingorders = []
+        for tickers in self.account.positions.mypositions:
+            for assettypes in self.account.positions.mypositions[tickers]:
+                if assettypes=='equity':
+                    allclosingorders.append(Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+                                    symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1))
+                elif assettypes=='option':
+                    for symbols in self.account.positions.mypositions[tickers]['options']:
+                        latestoptionsymbolrecord = self.market.__dict__[tickers].getoptionsymbolsnapshot(symbols)
+
         

@@ -87,10 +87,10 @@ class Positions():
         pass
 
 
-    def changestockposition(self, ticker:str, quantity:int, tradeprice:float):
+    def changestockposition(self, tickerid:int, ticker:str, quantity:int, tradeprice:float):
         # for stocks
         if ticker not in self.mypositions:
-            self.mypositions[ticker] = {'equity': {'symbol':ticker, 'quantity':quantity, 'tradeprice':tradeprice}}
+            self.mypositions[ticker] = {'equity': {'tickerid':tickerid, 'symbol':ticker, 'quantity':quantity, 'tradeprice':tradeprice}}
         else:
             if 'equity' in self.mypositions[ticker]:
                 if self.mypositions[ticker]['equity']['quantity']*quantity<0:
@@ -104,16 +104,16 @@ class Positions():
                     self.mypositions[ticker]['equity']['quantity']+=quantity
                     self.mypositions[ticker]['equity']['tradeprice']=newaveragetradeprice
             else:
-                self.mypositions[ticker]['equity'] = {'symbol':ticker, 'quantity':quantity}
+                self.mypositions[ticker]['equity'] = {'tickerid':tickerid, 'symbol':ticker, 'quantity':quantity}
 
         return self.mypositions
 
 
-    def changeoptionposition(self, ticker:str, quantity:int, tradeprice:float, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp):
+    def changeoptionposition(self, tickerid:int, ticker:str, quantity:int, tradeprice:float, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp):
         # for options
         if ticker not in self.mypositions:
             # if ticker is not there at all
-            self.mypositions[ticker] = {'options': {symbol: {'quantity': quantity, 'tradeprice':tradeprice, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate, 'tradeprice':tradeprice}}}
+            self.mypositions[ticker] = {'options': {symbol: {'tickerid':tickerid, 'quantity': quantity, 'tradeprice':tradeprice, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate, 'tradeprice':tradeprice}}}
         else:
             if 'options' in self.mypositions[ticker]:
                 if symbol in self.mypositions[ticker]['options']:
@@ -137,9 +137,9 @@ class Positions():
                                 raise Exception("We should not get here. I leave the code, just to check. The if should be removed.")
                                 # self.mypositions[ticker]['options'].pop(symbol)
                 else:
-                    self.mypositions[ticker]['options'][symbol] = {'quantity': quantity, 'tradeprice':tradeprice, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}
+                    self.mypositions[ticker]['options'][symbol] = {'tickerid':tickerid, 'quantity': quantity, 'tradeprice':tradeprice, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}
             else:
-                self.mypositions[ticker]['options'] = {symbol: {'quantity': quantity, 'tradeprice':tradeprice, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}}
+                self.mypositions[ticker]['options'] = {symbol: {'tickerid':tickerid, 'quantity': quantity, 'tradeprice':tradeprice, 'pcflag':pcflag, 'k':k, 'expirationdate':expirationdate}}
         return self.mypositions
 
 
@@ -283,7 +283,7 @@ class Dealer():
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     # [TODO] This is where we allow for some flexibility in the how trades are executed
                     tradeprice = thisoption['ask'].iloc[0]
-                    positionchange = {'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
+                    positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}                                     
                     trade = Trade(datetime=self.market.currentdatetime, positionchange=positionchange, cashflow=cashflow)
@@ -310,7 +310,7 @@ class Dealer():
 
                 if dobuy:
                     cashflow = -tradeprice*thisorder.quantity
-                    positionchange = {'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
+                    positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
             else:
@@ -348,7 +348,7 @@ class Dealer():
                 
                 if dosell:
                     cashflow = +tradeprice*thisorder.quantity*100
-                    positionchange = {'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
+                    positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
@@ -374,7 +374,7 @@ class Dealer():
 
                 if dosell:
                     cashflow = +tradeprice*thisorder.quantity
-                    positionchange = {'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
+                    positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
                     trade = Trade(self.market.currentdatetime, positionchange, cashflow)
 
@@ -461,7 +461,7 @@ class Account():
         return self.startingtime
         
     
-    def update(self, tradelist:list[dict])->float:
+    def update(self, tradelist:list[Trade])->float:
         """
             Two tasks (for now):
             1- record the trades from the tradelist
@@ -477,7 +477,7 @@ class Account():
                                             symbol=thistrade.positionchange['symbol'], pcflag=thistrade.positionchange['pcflag'], k=thistrade.positionchange['k'],
                                             expirationdate=thistrade.positionchange['expirationdate'])
             elif thistrade.positionchange['assettype']==ASSET_TYPE_STOCK:
-                self.positions.changestockposition(ticker=thistrade.positionchange['ticker'], quantity=thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'])
+                self.positions.changestockposition(tickerid=thistrade.positionchange['ticker'] , ticker=thistrade.positionchange['ticker'], quantity=thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'])
             else:
                 raise Exception('This makes no sense to end up here!')
 
