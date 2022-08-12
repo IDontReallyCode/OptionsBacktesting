@@ -123,3 +123,11 @@ When trading options where the data has bid/ask, we always assuming the worse ca
 
 When trading stock where the data is OHLC, we trade at Open (of following candle)
 
+# TODO
+- Category :: Priority :: Description
+- option :: low :: Deal with exercise of options at maturity
+- margin :: high :: estimate the margin on a short single option
+- margin :: med :: recognize the margin on known spreads, like verticals
+- 
+
+
