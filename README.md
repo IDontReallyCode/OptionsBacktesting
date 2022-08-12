@@ -123,3 +123,14 @@ When trading options where the data has bid/ask, we always assuming the worse ca
 
 When trading stock where the data is OHLC, we trade at Open (of following candle)
 
+# TODO
+- Category :: Priority :: Description
+- Dealer :: low :: Deal with exercise of options at maturity
+- Account :: high :: estimate the margin on a short single option
+- Account :: med :: recognize the margin on known spreads, like verticals
+- Account :: med :: update the capital and the position values at each time steps to be able to assess the strategy standard deviation.
+- Order :: med :: GTC and DAY contingent orders
+- Dealer :: med :: Provide feedback on canceled orders
+- Dealer :: med :: Provide flexibility on how trades are executed (bid-ask and OHLC)
+- Account :: med :: Look at how the marked price is determined.
+
