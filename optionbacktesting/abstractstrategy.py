@@ -28,7 +28,7 @@ class Strategy(ABC):
         """
         self.marketdata = marketdata
         self.account = account
-        self.estimatestrategy(None,None)
+        # self.estimatestrategy(None,None)
 
 
     def estimatestrategy(self, marketfeedback=None, accountfeedback=None):

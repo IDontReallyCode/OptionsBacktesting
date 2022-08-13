@@ -11,7 +11,7 @@ import optionbacktesting as obt
 # import datetime
 import matplotlib.pyplot as plt
 
-from optionbacktesting.broker import ASSET_TYPE_STOCK, BUY_TO_OPEN
+from optionbacktesting.broker import ASSET_TYPE_STOCK, BUY_TO_OPEN, ORDER_TYPE_LIMIT
 
 
 class MyStrategy(obt.abstractstrategy.Strategy):
@@ -28,8 +28,13 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             self.holdingnow = True
 
         if not self.holdingnow:
+            currentcandle = self.marketdata.tickerlist[0].getcurrentstockcandle()
+            samecandle = self.marketdata.CLF.getcurrentstockcandle()
+            howmuch = self.account.capital
+            howmany = int(howmuch/samecandle.iloc[0]['high'])
             self.theseorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
-                                    symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1))
+                                    symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=howmany, ordertype=ORDER_TYPE_LIMIT,
+                                    triggerprice=samecandle.iloc[0]['high']))
         
         return self.theseorders
         
@@ -54,14 +59,11 @@ def main():
     mychronos.execute()
 
     print(myaccount.positions.mypositions)
-    fig, (ax1, ax2) = plt.subplots(2,1, sharex=True, sharey=False)
-    ax1.plot(uniquedaydates, myaccount.totalvaluests)
-    ax1.set_title('Account value')
-    ax2.plot(uniquedaydates, myaccount.positionvaluests)
-    ax2.plot(uniquedaydates, stockdataCLF['close'])
-    ax2.set_title('position value VS stock price \n(position value is updated after the fact. \nthis is why it is lagged)')
-    fig.tight_layout()
+    plt.plot(uniquedaydates, myaccount.totalvaluests)
     plt.show()
+    # plt.plot(uniquedaydates, myaccount.positionvaluests)
+    # plt.plot(uniquedaydates, stockdataCLF['close'])
+    # plt.show()
     pausehere=1
 
 
