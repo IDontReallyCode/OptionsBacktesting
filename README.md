@@ -5,6 +5,8 @@ This is my attempt to build a backtesting framework that deals with options.
 _Disclaimer: I never learned to code in Python. Rather, I figure out a way. Don't point at a mistake unless you are willing to fix it ;)_
 
 
+
+
 ## The outline is this:
 
 - Get the entire dataset you need for one or more tickers, including the option chains, at some specific time interval. It can be daily, 1 min, 10 min, etc.
