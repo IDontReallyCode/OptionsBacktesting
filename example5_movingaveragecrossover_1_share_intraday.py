@@ -5,6 +5,7 @@
         Buy the stock day 1. hold.
 """
 
+from cProfile import label
 import numpy as np
 import pandas as pd
 import optionbacktesting as obt
@@ -28,7 +29,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
     def priming(self, marketdata: obt.Market, account: obt.Account):
         super().priming(marketdata, account)
 
-        historicaldata = self.marketdata.CLF.gettickerdata()
+        historicaldata = self.marketdata.CARROT.gettickerdata()
         self.movingaverage_long[0] = np.average(historicaldata.iloc[-self.ma_long__length:]['close'])
         self.movingaverageshort[0] = np.average(historicaldata.iloc[-self.ma_short_length:]['close'])
         self.timer = 1
@@ -38,7 +39,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
     def estimatestrategy(self, marketfeedback, accountfeedback):
         super().estimatestrategy(marketfeedback, accountfeedback)
 
-        lastcandle = self.marketdata.CLF.getcurrentstockcandle()
+        lastcandle = self.marketdata.CARROT.getcurrentstockcandle()
         self.movingaverage_long[self.timer] = (self.movingaverage_long[self.timer-1]*(self.ma_long__length-1) + 
                                                 lastcandle.iloc[0]['close'])/(self.ma_long__length)
         self.movingaverageshort[self.timer] = (self.movingaverageshort[self.timer-1]*(self.ma_short_length-1) + 
@@ -76,28 +77,28 @@ class MyStrategy(obt.abstractstrategy.Strategy):
 
 def main():
     myaccount = obt.Account(deposit=1000)
-    stockdataCLF = pd.read_csv("./privatedata/CLFintraday.csv", index_col=0)
-    stockdataCLF['datetime'] = pd.to_datetime(stockdataCLF['tdate'])
-    stockdataCLF['datetime'] = stockdataCLF['datetime'].dt.tz_localize('UTC').dt.tz_convert("US/Eastern")
-    stockdataCLF['date_eod'] = stockdataCLF['datetime'].dt.date
-    stockdataCLF['justtimetofilter'] = stockdataCLF['datetime'].dt.time
-    stockdataCLF.drop(['total_volume', 'avg_trade_size', 'time_beg', 'vwap', 'opening_price', 'tick_vwap', 'time_end', 'save_date'], axis=1, inplace=True)
+    stockdata = pd.read_csv("./SAMPLEintradaystock.csv", index_col=0)
+    stockdata['datetime'] = pd.to_datetime(stockdata['tdate'])
+    stockdata['datetime'] = stockdata['datetime'].dt.tz_localize('UTC').dt.tz_convert("US/Eastern")
+    stockdata['date_eod'] = stockdata['datetime'].dt.date
+    stockdata['justtimetofilter'] = stockdata['datetime'].dt.time
+    stockdata.drop(['total_volume', 'avg_trade_size', 'time_beg', 'vwap', 'opening_price', 'tick_vwap', 'time_end', 'save_date'], axis=1, inplace=True)
     # resample to 5min candles AAAANNNNNDDDDDD make the datetime column the index.
-    stockdataCLF = stockdataCLF.resample('1H', on='datetime').last().dropna()
-    stockdataCLF.rename(columns={'tick_volume':'volume', 'tick_open':'open', 'tick_close':'close', 'tick_high':'high', 'tick_low':'low'}, inplace=True)
+    stockdata = stockdata.resample('1H', on='datetime').last().dropna()
+    stockdata.rename(columns={'tick_volume':'volume', 'tick_open':'open', 'tick_close':'close', 'tick_high':'high', 'tick_low':'low'}, inplace=True)
     # filterout pre and post market data
-    stockdataCLF = stockdataCLF.between_time(datetime.time(9), datetime.time(15), include_start=True, include_end=True) 
+    stockdata = stockdata.between_time(datetime.time(9), datetime.time(15), include_start=True, include_end=True) 
 
-    uniquetimesteps = pd.DataFrame(stockdataCLF['datetime'].unique(), columns=['datetime'])
+    uniquetimesteps = pd.DataFrame(stockdata['datetime'].unique(), columns=['datetime'])
     uniquetimesteps['datetime'] = pd.to_datetime(uniquetimesteps['datetime'])
 
-    tickerCLF = obt.OneTicker(tickername='CLF', tickertimeseries=stockdataCLF, optionchaintimeseries=pd.DataFrame())
+    ticker = obt.OneTicker(tickername='CARROT', tickertimeseries=stockdata, optionchaintimeseries=pd.DataFrame())
     
-    mymarket = obt.Market([tickerCLF],['CLF'])
+    mymarket = obt.Market([ticker],['CARROT'])
     mydealer = obt.Dealer(marketdata=mymarket)
-    longma = 126
-    shrtma = 21
-    mystrategy = MyStrategy(ma_size=len(stockdataCLF), short=shrtma, long=longma)
+    longma = 125
+    shrtma = 25
+    mystrategy = MyStrategy(ma_size=len(stockdata), short=shrtma, long=longma)
     mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquetimesteps)
 
     mychronos.primingthestrategyat(longma+1)
@@ -106,17 +107,19 @@ def main():
 
     print(myaccount.positions.mypositions)
     fig, (ax1,ax2,ax3) = plt.subplots(3,1, sharex=True, sharey=False)
-    ax1.plot(uniquetimesteps[longma+1:], myaccount.totalvaluests)
+    ax1.plot(uniquetimesteps[-len(myaccount.totalvaluests):], myaccount.totalvaluests)
     ax1.set_title('Account value')
-    ax2.plot(uniquetimesteps, mystrategy.movingaverage_long)
-    ax2.plot(uniquetimesteps, mystrategy.movingaverageshort)
+    ax2.plot(uniquetimesteps[-len(myaccount.totalvaluests):],stockdata.iloc[-len(myaccount.totalvaluests):]['close'],label='close')
+    ax2.plot(uniquetimesteps[-len(myaccount.totalvaluests):], mystrategy.movingaverage_long[:len(myaccount.totalvaluests)],label='long')
+    ax2.plot(uniquetimesteps[-len(myaccount.totalvaluests):], mystrategy.movingaverageshort[:len(myaccount.totalvaluests)],label='short')
+    ax2.legend()
     ax2.set_title('Moving Averages')
-    ax3.plot(uniquetimesteps, mystrategy.movingaveragesignl)
+    ax3.plot(uniquetimesteps[-len(myaccount.totalvaluests):], mystrategy.movingaveragesignl[:len(myaccount.totalvaluests)])
     ax3.set_title('Buy{1}/Sell{0} signal')
     fig.tight_layout()
     plt.show()
     # plt.plot(uniquetimesteps, myaccount.positionvaluests)
-    # plt.plot(uniquetimesteps, stockdataCLF['close'])
+    # plt.plot(uniquetimesteps, stockdata['close'])
     # plt.show()
     pausehere=1
 

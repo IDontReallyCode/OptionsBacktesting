@@ -28,7 +28,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
     def priming(self, marketdata: obt.Market, account: obt.Account):
         super().priming(marketdata, account)
 
-        historicaldata = self.marketdata.CLF.gettickerdata()
+        historicaldata = self.marketdata.tickerlist[0].gettickerdata()
         self.movingaverage_long[0] = np.average(historicaldata.iloc[-self.ma_long__length:]['close'])
         self.movingaverageshort[0] = np.average(historicaldata.iloc[-self.ma_short_length:]['close'])
         self.timer = 1
@@ -38,7 +38,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
     def estimatestrategy(self, marketfeedback, accountfeedback):
         super().estimatestrategy(marketfeedback, accountfeedback)
 
-        lastcandle = self.marketdata.CLF.getcurrentstockcandle()
+        lastcandle = self.marketdata.tickerlist[0].getcurrentstockcandle()
         self.movingaverage_long[self.timer] = (self.movingaverage_long[self.timer-1]*(self.ma_long__length-1) + 
                                                 lastcandle.iloc[0]['close'])/(self.ma_long__length)
         self.movingaverageshort[self.timer] = (self.movingaverageshort[self.timer-1]*(self.ma_short_length-1) + 
@@ -76,20 +76,20 @@ class MyStrategy(obt.abstractstrategy.Strategy):
 
 def main():
     myaccount = obt.Account(deposit=1000)
-    stockdataCLF = pd.read_csv("./privatedata/CLFstock.csv", index_col=0)
-    stockdataCLF.rename(columns={'date_eod':'datetime'}, inplace=True)
-    stockdataCLF['datetime'] = pd.to_datetime(stockdataCLF['datetime'])
+    stockdata = pd.read_csv("./SAMPLEdailystock.csv", index_col=0)
+    stockdata.rename(columns={'date_eod':'datetime'}, inplace=True)
+    stockdata['datetime'] = pd.to_datetime(stockdata['datetime'])
 
-    uniquedaydates = pd.DataFrame(stockdataCLF['datetime'].unique(), columns=['datetime'])
+    uniquedaydates = pd.DataFrame(stockdata['datetime'].unique(), columns=['datetime'])
     uniquedaydates['datetime'] = pd.to_datetime(uniquedaydates['datetime'])
 
-    tickerCLF = obt.OneTicker(tickername='CLF', tickertimeseries=stockdataCLF, optionchaintimeseries=pd.DataFrame())
+    ticker = obt.OneTicker(tickername='random', tickertimeseries=stockdata, optionchaintimeseries=pd.DataFrame())
     
-    mymarket = obt.Market([tickerCLF],['CLF'])
+    mymarket = obt.Market([ticker],['tic99'])
     mydealer = obt.Dealer(marketdata=mymarket)
     longma = 126
     shrtma = 21
-    mystrategy = MyStrategy(ma_size=len(stockdataCLF), short=shrtma, long=longma)
+    mystrategy = MyStrategy(ma_size=len(stockdata), short=shrtma, long=longma)
     mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
 
     mychronos.primingthestrategyat(longma+1)
@@ -108,7 +108,7 @@ def main():
     fig.tight_layout()
     plt.show()
     # plt.plot(uniquedaydates, myaccount.positionvaluests)
-    # plt.plot(uniquedaydates, stockdataCLF['close'])
+    # plt.plot(uniquedaydates, stockdata['close'])
     # plt.show()
     pausehere=1
 

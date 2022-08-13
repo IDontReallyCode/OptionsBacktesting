@@ -37,14 +37,14 @@ class MyStrategy(obt.abstractstrategy.Strategy):
 
 def main():
     myaccount = obt.Account(deposit=1000)
-    stockdataCLF = pd.read_csv("./privatedata/CLFstock.csv", index_col=0)
-    stockdataCLF['datetime'] = pd.to_datetime(stockdataCLF['date_eod'])
-    uniquedaydates = pd.DataFrame(stockdataCLF['date_eod'].unique(), columns=['datetime'])
+    stockdata = pd.read_csv("./SAMPLEdailystock.csv", index_col=0)
+    stockdata['datetime'] = pd.to_datetime(stockdata['date_eod'])
+    uniquedaydates = pd.DataFrame(stockdata['date_eod'].unique(), columns=['datetime'])
     uniquedaydates['datetime'] = pd.to_datetime(uniquedaydates['datetime'])
 
-    tickerCLF = obt.OneTicker(tickername='CLF', tickertimeseries=stockdataCLF, optionchaintimeseries=pd.DataFrame())
+    tickerRANDOM = obt.OneTicker(tickername='RANDOM', tickertimeseries=stockdata, optionchaintimeseries=pd.DataFrame())
     
-    mymarket = obt.Market([tickerCLF],['CLF'])
+    mymarket = obt.Market([tickerRANDOM],['RANDOM'])
     mydealer = obt.Dealer(marketdata=mymarket)
     mystrategy = MyStrategy()
     mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
@@ -58,7 +58,7 @@ def main():
     ax1.plot(uniquedaydates, myaccount.totalvaluests)
     ax1.set_title('Account value')
     ax2.plot(uniquedaydates, myaccount.positionvaluests)
-    ax2.plot(uniquedaydates, stockdataCLF['close'])
+    ax2.plot(uniquedaydates, stockdata['close'])
     ax2.set_title('position value VS stock price \n(position value is updated after the fact. \nthis is why it is lagged)')
     fig.tight_layout()
     plt.show()
