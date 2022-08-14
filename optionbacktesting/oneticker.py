@@ -57,7 +57,11 @@ class OneTicker():
 
     
     def getcurrentstockcandle(self):
-        return self._tickerts[self._tickerts["datetime"]==self.currentdatetime]
+        candle = self._tickerts[self._tickerts["datetime"]==self.currentdatetime]
+        if candle.empty:
+            sofar = self._tickerts[self._tickerts["datetime"]<=self.currentdatetime]
+            candle = sofar.iloc[-1:]
+        return candle
         # thisday = str(self.currentdatetime.date())
         # return self._tickerts[self._tickerts["datetime"]==thisday]
 

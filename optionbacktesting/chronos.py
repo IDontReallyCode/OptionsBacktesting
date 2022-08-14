@@ -22,8 +22,8 @@ class Chronos():
         self.account = clientaccount
         self.strategy = clientstrategy
         self.chronology = chronology
-        self.currenttimestep = 0
-        self.currentdatetime = self.chronology['datetime'].iloc[self.currenttimestep]
+        self.startingtimestep = 0
+        self.startingdatetime = self.chronology['datetime'].iloc[self.startingtimestep]
         self.totaltimesteps = len(chronology)
 
 
@@ -39,12 +39,12 @@ class Chronos():
 
             Priming the Market simply means setting the "currentdatatime" so the market knows what data is available so far.
         """
-        self.currenttimestep = timeindex
-        self.currentdatetime = self.chronology['datetime'].iloc[self.currenttimestep]
+        self.startingtimestep = timeindex
+        self.startingdatetime = self.chronology['datetime'].iloc[self.startingtimestep]
 
-        self.market.priming(self.currentdatetime)
-        # self.dealer.priming(self.currentdatetime)
-        self.account.priming(self.currentdatetime)
+        self.market.priming(self.startingdatetime)
+        # self.dealer.priming(self.startingdatetime)
+        self.account.priming(self.startingdatetime)
         self.strategy.priming(self.market, self.account)
 
 
@@ -61,6 +61,8 @@ class Chronos():
                     for symbols in self.account.positions.mypositions[tickers]['options']:
                         latestoptionsymbolrecord = self.market.__dict__[tickers].getoptionsymbolsnapshot(symbols)
                         done=1
+        if (self.account.capital+totalpositionvalues)<0:
+            wtf=1
         self.account.positionvalues = totalpositionvalues
         self.account.positionvaluests.append(totalpositionvalues)
         self.account.totalvaluests.append(self.account.capital+totalpositionvalues)
@@ -73,7 +75,9 @@ class Chronos():
             
             Then closes all positions
         """
-        for timeindex in range(self.currenttimestep+1, self.totaltimesteps):
+        for timeindex in range(self.startingtimestep+1, self.totaltimesteps):
+            if timeindex>=41:
+                wait=1
             self.market.timepass(self.chronology['datetime'].iloc[timeindex])
             dealerfeedback = self.dealer.gothroughorders()
             if dealerfeedback is not None:

@@ -104,7 +104,7 @@ class Positions():
                     self.mypositions[ticker]['equity']['quantity']+=quantity
                     self.mypositions[ticker]['equity']['tradeprice']=newaveragetradeprice
             else:
-                self.mypositions[ticker]['equity'] = {'tickerid':tickerid, 'symbol':ticker, 'quantity':quantity}
+                self.mypositions[ticker]['equity'] = {'tickerid':tickerid, 'symbol':ticker, 'quantity':quantity, 'tradeprice':tradeprice}
 
         return self.mypositions
 
@@ -282,8 +282,8 @@ class Dealer():
                                             & (optionchain['k']==thisorder.k) 
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     # [TODO] This is where we allow for some flexibility in the how trades are executed
-                    tradeprice = thisoption['ask'].iloc[0]
-                    cashflow = tradeprice*np.abs(thisorder.quantity)*100
+                    tradeprice = thisoption.iloc[0]['ask']
+                    cashflow = -tradeprice*np.abs(thisorder.quantity)*100
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}                                     
@@ -296,7 +296,7 @@ class Dealer():
                 candle = self.market.tickerlist[thisorder.tickerindex].getcurrentstockcandle()
                 # [TODO] This is where we allow for some flexibility in the how trades are executed
                 # [TODO] Adapt the behavior for contingent orders
-                tradeprice = candle['open'].iloc[0]
+                tradeprice = candle.iloc[0]['open']
 
                 if thisorder.ordertype==ORDER_TYPE_MARKET:
                     dobuy=True
@@ -331,13 +331,13 @@ class Dealer():
 
                 dosell = False
                 if thisorder.ordertype==ORDER_TYPE_MARKET:
-                    dobuy=True
+                    dosell=True
                 elif thisorder.ordertype==ORDER_TYPE_LIMIT:
                     if tradeprice>=thisorder.triggerprice:
-                        dobuy=True
+                        dosell=True
                 elif thisorder.ordertype==ORDER_TYPE_STOP:
                     if tradeprice<=thisorder.triggerprice:
-                        dobuy=True
+                        dosell=True
                 else:
                     raise Exception("What type of order are you trying to do? Use the pre-determined constants")
                 
@@ -473,9 +473,13 @@ class Account():
                                             symbol=thistrade.positionchange['symbol'], pcflag=thistrade.positionchange['pcflag'], k=thistrade.positionchange['k'],
                                             expirationdate=thistrade.positionchange['expirationdate'])
             elif thistrade.positionchange['assettype']==ASSET_TYPE_STOCK:
-                self.positions.changestockposition(tickerid=thistrade.positionchange['tickerid'] , ticker=thistrade.positionchange['ticker'], quantity=thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'])
+                self.positions.changestockposition(tickerid=thistrade.positionchange['tickerid'] , ticker=thistrade.positionchange['ticker'], 
+                                                    quantity=thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'])
             else:
                 raise Exception('It makes no sense to end up here!')
+
+        if self.capital<0:
+            stopwtf=1
 
         return self.capital
         
