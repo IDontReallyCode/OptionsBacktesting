@@ -33,7 +33,7 @@ Executing means:
 
 #### LOOP:
 1. Tell the `Market` to move one step in time by passing the next `['datetime']`
-   - This way, when the `Strategy` accesses data, it will have access to all the data "up until, and including, that date", and asking for an option chain snapshot will give the latest OC snapshot available. One can also ask for the the whole history. Same for the stock. 
+   - This way, when the `Strategy` (or any other object) accesses data, it can ask for all the data "up until, and including, that datetime", or, "the lastest data", which would be the latest snapshot for options, or the latest candle for stocks. 
 2. Tell the `Dealer` execute orders.
    - The `Dealer` has a list of waiting `Order`s.
    - The `Dealer` loops through all waiting orders and tries to execute them.
@@ -42,11 +42,15 @@ Executing means:
      - If an `Order` is executed, it is removed from the queue, and a `Trade` is created
      - If and `Order` is canceled because of lack of capital or margin, a feedback is sent to the strategy [TODO]
 3. Tell the `Account` to update based on the `Trade`s 
-   - `Trade` shohuld also include the Margin change
+   - `Trade` should also include the Margin change
    - If the `Account` requires contiunuous update, the value of each position is updated and the total value in the account is updated. [TODO]
    - The margin also needs to be recalculated based on the underlying price.
-4. Update the strategy with the new candle, tell the strategy to update, 
-   - => return new orders, if any.
+4. Tell the `Strategy` to update, 
+   - return new orders, if any.
+5. Send the new `Order`'s from `Strategy` and send them to the `Dealer`
+   - This is when we check for margin impact
+6. Update the `Positions` values and the total portfolio values
+ 
 
 
 # Appendix
@@ -82,7 +86,7 @@ Data should be sorted by pcflag, k, dte
 Other columns can be there if you need them for strategy.
 
 
-### Extra Data
+## Extra Data
 You can send a list of extradata with their name when creating the market object.
 Suppose you want to use tweets
 
