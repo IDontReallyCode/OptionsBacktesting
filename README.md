@@ -50,6 +50,7 @@ Executing means:
 5. Send the new `Order`'s from `Strategy` and send them to the `Dealer`
    - This is when we check for margin impact
 6. Update the `Positions` values and the total portfolio values
+   - The margin amounts will be updated as well. See [here](#margins)
  
 
 
@@ -128,6 +129,13 @@ A position is defined by:
 When trading options where the data has bid/ask, we always assuming the worse case scenario and BUY at ask, SELL at bid
 
 When trading stock where the data is OHLC, we trade at Open (of following candle)
+
+## Margins
+
+For now, the margins will be based on TD Ameritrade reference document: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
+
+Margins amounts will be updated and tracked, however, no margin call actions will be taken. The reason is we assume the strategy being backtested is part of a much larger portfolio.
+
 
 # TODO
 - Category :: Priority :: Description
