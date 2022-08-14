@@ -130,11 +130,16 @@ When trading options where the data has bid/ask, we always assuming the worse ca
 
 When trading stock where the data is OHLC, we trade at Open (of following candle)
 
+
+
 ## Margins
 
 For now, the margins will be based on TD Ameritrade reference document: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
 
 Margins amounts will be updated and tracked, however, no margin call actions will be taken. The reason is we assume the strategy being backtested is part of a much larger portfolio.
+
+We use a similar approach for the capital in the account. If you do not deposit enough money to run the strategy, we let the account go negative. The user can observe this after the fact and decide how to deal with this.
+
 
 
 # TODO
