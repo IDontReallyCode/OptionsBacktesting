@@ -61,6 +61,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                     if not quantityadjustementtodeltahedge==0:
                         self.theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_STOCK, symbol=targetput.iloc[0]['ticker'], 
                                 action=obt.BUY_TO_OPEN, quantity=quantityadjustementtodeltahedge))
+                    THIS NEEDS TO BE FIXED
 
         elif self.marketdata.currentdatetime.weekday()==3: #Thursday after close we submit orders to close position
             # Today is Thursday, we put an order to sell Friday (or next opened day)
