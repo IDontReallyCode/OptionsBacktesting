@@ -11,7 +11,7 @@ _Disclaimer: I never learned to code in Python. Rather, I figure out a way. Don'
 
 - Get the entire dataset you need for one or more tickers, including the option chains, at some specific time interval. It can be daily, 1 min, 10 min, etc.
 - Initialize the `OneTicker` classes with the datasets
-  - To simplify "MY" life, I will start by dealing with the data format that comes out of the TDA API
+  - To simplify "MY" life, I will start by dealing with a DataFrame with specific columns, see [here](#data)
 - Once all `OneTicker` have been initialized, initialize the `Market` class
 - Initialize the `Account` with a deposit, a margin type, ?
 - Ititialize the `Dealer` with the `Market` data
@@ -42,15 +42,15 @@ Executing means:
      - If an `Order` is executed, it is removed from the queue, and a `Trade` is created
      - If and `Order` is canceled because of lack of capital or margin, a feedback is sent to the strategy [TODO]
 3. Tell the `Account` to update based on the `Trade`s 
-   - `Trade` should also include the Margin change
-   - If the `Account` requires contiunuous update, the value of each position is updated and the total value in the account is updated. [TODO]
-   - The margin also needs to be recalculated based on the underlying price.
+   - ~~`Trade` should also include the Margin change~~ Margin calculation is put aside for now.
+   - The value of each position is updated and the total value in the account is updated.
+   - ~~The margin also needs to be recalculated based on the underlying price.~~
 4. Tell the `Strategy` to update, 
    - return new orders, if any.
 5. Send the new `Order`'s from `Strategy` and send them to the `Dealer`
    - This is when we check for margin impact
 6. Update the `Positions` values and the total portfolio values
-   - The margin amounts will be updated as well. See [here](#margins)
+   - ~~The margin amounts will be updated as well. See [here](#margins)~~ Margins are put aside for now.
  
 
 
@@ -134,11 +134,21 @@ When trading stock where the data is OHLC, we trade at Open (of following candle
 
 ## Margins
 
-For now, the margins will be based on TD Ameritrade reference document: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
+The margins would be based on TD Ameritrade reference document: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
 
-Margins amounts will be updated and tracked, however, no margin call actions will be taken. The reason is we assume the strategy being backtested is part of a much larger portfolio.
+However, for now, we take the following approach:
+- Make a deposit in the `Account` when you initialize it at a level that "makes sense" based on the strategy you back test.
+- The `Account` value will be updated at each time step on the `chronology` time series passed to `Chronos`.
+- To assess the performance on the strategy, inspect the time series of the `Account` values.
 
-We use a similar approach for the capital in the account. If you do not deposit enough money to run the strategy, we let the account go negative. The user can observe this after the fact and decide how to deal with this.
+Calculating the Margins is set aside for now. Reasons include:
+- When calculating the margin requirement for options, the formula depends on the type of spread, how the spread was calculated, and the broker.
+- For example, 
+  - with TDA, when shorting a straddle, the margin requirement = MAX( call margin, put margin )
+  - (I was told, but did not verify) that with IB, the margin was the call margin.
+  - When legging into the short straddle, instead of trading a short straddle, apparently (I have not verified) with TDA, the margin would be "grossed out", i.e., the spread would be "detected", and only the MAX( call margin, put margin ) would be required. However, (I was told but did not verify) that with IB, that would not be the case, i.e., both margins would be required.
+- If the end goal is to assess the performance of a strategy, perhaps it is better to give it a certain allocation, and see how the account value changes based on the strategy, and not bother too much with the margin requirements.
+- Because of all this, I decide to put margin calculation aside for now. 
 
 
 
