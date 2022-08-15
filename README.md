@@ -42,15 +42,15 @@ Executing means:
      - If an `Order` is executed, it is removed from the queue, and a `Trade` is created
      - If and `Order` is canceled because of lack of capital or margin, a feedback is sent to the strategy [TODO]
 3. Tell the `Account` to update based on the `Trade`s 
-   - ~~`Trade` should also include the Margin change~~ Margin calculation is put aside for now.
+   - `Trade` should also include the Margin change.
    - The value of each position is updated and the total value in the account is updated.
-   - ~~The margin also needs to be recalculated based on the underlying price.~~
+   - The margin also needs to be recalculated based on the underlying price.
 4. Tell the `Strategy` to update, 
    - return new orders, if any.
 5. Send the new `Order`'s from `Strategy` and send them to the `Dealer`
    - This is when we check for margin impact
 6. Update the `Positions` values and the total portfolio values
-   - ~~The margin amounts will be updated as well. See [here](#margins)~~ Margins are put aside for now.
+   - The margin amounts will be updated as well. See [here](#margins)
  
 
 
@@ -148,7 +148,7 @@ Calculating the Margins is set aside for now. Reasons include:
   - (I was told, but did not verify) that with IB, the margin was the call margin.
   - When legging into the short straddle, instead of trading a short straddle, apparently (I have not verified) with TDA, the margin would be "grossed out", i.e., the spread would be "detected", and only the MAX( call margin, put margin ) would be required. However, (I was told but did not verify) that with IB, that would not be the case, i.e., both margins would be required.
 - If the end goal is to assess the performance of a strategy, perhaps it is better to give it a certain allocation, and see how the account value changes based on the strategy, and not bother too much with the margin requirements.
-- Because of all this, I decide to put margin calculation aside for now. 
+- Because of all this, I decide to put margin calculation aside for now.
 
 
 
