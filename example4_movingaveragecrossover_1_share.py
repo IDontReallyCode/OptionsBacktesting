@@ -28,7 +28,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
     def priming(self, marketdata: obt.Market, account: obt.Account):
         super().priming(marketdata, account)
 
-        historicaldata = self.marketdata.tickerlist[0].gettickerdata()
+        historicaldata = self.marketdata.tickerlist[0].getstockdata()
         self.movingaverage_long[0] = np.average(historicaldata.iloc[-self.ma_long__length:]['close'])
         self.movingaverageshort[0] = np.average(historicaldata.iloc[-self.ma_short_length:]['close'])
         self.timer = 1
