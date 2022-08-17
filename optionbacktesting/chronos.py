@@ -76,20 +76,23 @@ class Chronos():
             Then closes all positions
         """
         for timeindex in range(self.startingtimestep+1, self.totaltimesteps):
-            if timeindex>=41:
-                wait=1
+            # 1. Tell the `Market` to move one step in time by passing the next `['datetime']`
             self.market.timepass(self.chronology['datetime'].iloc[timeindex])
+            # 2. Tell the `Dealer` execute orders.
             dealerfeedback = self.dealer.gothroughorders()
             if dealerfeedback is not None:
+                # 3. Tell the `Account` to update based on the `Trade`s 
                 accountfeedback = self.account.update(dealerfeedback)
             else:
                 # TODO Check what else we could need here
                 accountfeedback = self.account.capital
+            # 4. Tell the `Strategy` to update,    
             strategyfeedback = self.strategy.estimatestrategy(dealerfeedback, accountfeedback)
             
-            self._updatepositionvalues()
             self.dealer.sendorder(strategyfeedback)
-        
+
+            self._updatepositionvalues()
+
         # closing all positions
         allclosingorders = []
         for tickers in self.account.positions.mypositions:

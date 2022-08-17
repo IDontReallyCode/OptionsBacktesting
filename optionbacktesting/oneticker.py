@@ -17,7 +17,7 @@ class OneTicker():
         """
             We load the entire data sample at once.
             tickertimeseries HAS TO be a pandas.DataFrame OHLC
-            optionchaintimeseries HAS TI be a pandas.DataFrame bid/ask
+            optionchaintimeseries HAS TO be a pandas.DataFrame bid/ask
             See Readme.md for details on the data format
         """
         self.ticker = tickername
@@ -36,12 +36,12 @@ class OneTicker():
 
 
     def settime(self, currentdatetime):
+        """
+            currentdatetime must come from the Chronos.chronology, which has the time series of all time steps to run through for the back testing
+            Setting the time will ensure you get the right data when you need too.
+        """
         self.currentdatetime = currentdatetime
 
-
-    # def getdatapriorto(self, uptotimestamp:datetime):
-    #     stockdata = self.tickerts[self.tickerts["datetime"]<uptotimestamp]
-    #     optiondata = self.optionts[self.optionts["datetime"]<uptotimestamp]
 
     def gettickerdata(self):
         return self._tickerts[self._tickerts["datetime"]<=self.currentdatetime]
@@ -69,3 +69,9 @@ class OneTicker():
     def getoptionsymbolsnapshot(self, symbol):
         thisday = str(self.currentdatetime.date())
         return self._optionts[(self._optionts["datetime"]==thisday) & (self._optionsts['symbol']==symbol)]
+
+
+    def verifydata(self):
+        """
+
+        """
