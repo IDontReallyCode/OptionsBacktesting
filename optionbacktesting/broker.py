@@ -44,11 +44,12 @@ class Order():
             - expiration date
     """
     def __init__(self, tickerindex:int, ticker:str, assettype:int, symbol: str, action:int, quantity:int,
-                 tickerprice:float = 0.0, ordertype:int = ORDER_TYPE_MARKET, triggerprice:float = 0.0, pcflag:int = 1, k:float = 0, expirationdate:str = ''
+                 tickerprice:float = 0.0, optionprice:float = 0.0, ordertype:int = ORDER_TYPE_MARKET, triggerprice:float = 0.0, pcflag:int = 1, k:float = 0, expirationdate:str = ''
                  ) -> None:
         self.tickerindex = tickerindex              # User needs to know the order in which the tickers are loaded
         self.ticker = ticker                        # Ticker string for reference purpose, and dictionary key search
         self.tickerprice = tickerprice              # Required for margin calculation of options
+        self.optionprice = optionprice              # Required for margin calculation of options
         self.assettype = assettype                  # ASSET_TYPE_STOCK or ASSET_TYPE_OPTION
         self.symbol = symbol                        # ticker string for stock, the option symbol for options. Required for dictionary key search
         self.action = action                        # BUY or SELL
@@ -391,7 +392,7 @@ class Account():
             quantity can be positive of negative for long and short positions
     """
 
-    def __init__(self, deposit:float, margintype:int = MARGINTYPE_NONE, trackportfoliovalue:bool = False) -> None:
+    def __init__(self, deposit:float, margintype:int = MARGINTYPE_NONE) -> None:
         self._capital = deposit
         self.margintype = margintype
         self.margin = 0.0
@@ -401,8 +402,6 @@ class Account():
         self.totalvaluests = []
         self.startingtime = 0
         self.capitalts = []
-        self.trackportfoliovalue = trackportfoliovalue
-        # [TODO] add a step tp track the position values at each time step in the chronology
         pass
 
 
@@ -423,33 +422,33 @@ class Account():
         return self._capital - self.margin
 
 
-    def margincostoftrade(self, tradedetails:dict)-> float:
-        """
-            Since this class will have what it takes to deal with margins, the methods to know the margin of a trade will be right in here.
+    # def margincostoftrade(self, tradedetails:dict)-> float:
+    #     """
+    #         Since this class will have what it takes to deal with margins, the methods to know the margin of a trade will be right in here.
             
-            From: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
-            Uncovered equity options
-                Because writing uncovered—or naked—options represents greater risk of loss, the margin account requirements are higher. The writing
-                of uncovered puts and calls requires an initial deposit and maintenance of the greatest of the following three formulas:
-                a) 20% of the underlying stock²⁷ less the out-of-the-money amount, if any, plus 100% of the current market value of the option(s).
-                b) For calls, 10% of the market value of the underlying stock PLUS the premium value. For puts, 10% of the exercise value of the
-                underlying stock PLUS the premium value.
-                or
-                c) $50 per contract plus 100% of the premium.
-        """
-        if self.margintype==MARGINTYPE_NONE:
-            return 0.0
-        elif self.margintype==MARGINTYPE_TDA:
-            # here is some old code I can use 
-            # OTM = npspot[0,0] - Merged[['k']].to_numpy()
-            # OTM[OTM<0] = 0
-            # Margin = np.zeros((len(OTM),3))
-            # Margin[:,0] = (100 * 0.20 * npspot[0,0] + Merged[['ask']].to_numpy() - OTM).T
-            # Margin[:,1] = (100 * 0.10 * Merged[['k']].to_numpy() + Merged[['ask']].to_numpy()).T
-            # Margin[:,2] = (50 + Merged[['ask']].to_numpy()).T
-            return 0
-        else:
-            return 0
+    #         From: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
+    #         Uncovered equity options
+    #             Because writing uncovered—or naked—options represents greater risk of loss, the margin account requirements are higher. The writing
+    #             of uncovered puts and calls requires an initial deposit and maintenance of the greatest of the following three formulas:
+    #             a) 20% of the underlying stock²⁷ less the out-of-the-money amount, if any, plus 100% of the current market value of the option(s).
+    #             b) For calls, 10% of the market value of the underlying stock PLUS the premium value. For puts, 10% of the exercise value of the
+    #             underlying stock PLUS the premium value.
+    #             or
+    #             c) $50 per contract plus 100% of the premium.
+    #     """
+    #     if self.margintype==MARGINTYPE_NONE:
+    #         return 0.0
+    #     elif self.margintype==MARGINTYPE_TDA:
+    #         # here is some old code I can use 
+    #         # OTM = npspot[0,0] - Merged[['k']].to_numpy()
+    #         # OTM[OTM<0] = 0
+    #         # Margin = np.zeros((len(OTM),3))
+    #         # Margin[:,0] = (100 * 0.20 * npspot[0,0] + Merged[['ask']].to_numpy() - OTM).T
+    #         # Margin[:,1] = (100 * 0.10 * Merged[['k']].to_numpy() + Merged[['ask']].to_numpy()).T
+    #         # Margin[:,2] = (50 + Merged[['ask']].to_numpy()).T
+    #         return 0
+    #     else:
+    #         return 0
 
 
     def priming(self, currentdatetime:pd.Timestamp):
@@ -484,4 +483,44 @@ class Account():
         return self.capital
         
 
-
+    def estimatemargin(self, order:Order)->float:
+        """
+            Since this class will have what it takes to deal with margins, the methods to know the margin of a trade will be right in here.
+            
+            From: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
+            Uncovered equity options
+                Because writing uncovered—or naked—options represents greater risk of loss, the margin account requirements are higher. The writing
+                of uncovered puts and calls requires an initial deposit and maintenance of the greatest of the following three formulas:
+                a) 20% of the underlying stock²⁷ less the out-of-the-money amount, if any, plus 100% of the current market value of the option(s).
+                b) For calls, 10% of the market value of the underlying stock PLUS the premium value. For puts, 10% of the exercise value of the
+                underlying stock PLUS the premium value.
+                or
+                c) $50 per contract plus 100% of the premium.
+        """
+        # [TODO] Check for all possible combinations of situations
+        if self.margintype==MARGINTYPE_NONE:
+            return 0.0
+        elif self.margintype==MARGINTYPE_TDA:
+            if order.assettype == ASSET_TYPE_OPTION:
+                if order.pcflag == 1:
+                    OTM = np.max(order.tickerprice - order.k, 0)
+                    Margin = np.zeros((1,3))
+                    Margin[:,0] = 100 * 0.20 * (order.tickerprice - OTM) + order.optionprice
+                    Margin[:,1] = (100 * 0.10 * order.k + order.optionprice)
+                    Margin[:,2] = (50 + 100*order.optionprice)
+                    return np.max(Margin)
+                elif order.pcflag == 0:
+                    OTM = np.max(order.k - order.tickerprice, 0)
+                    Margin = np.zeros((1,3))
+                    Margin[:,0] = 100 * 0.20 * (order.tickerprice - OTM) + order.optionprice
+                    Margin[:,1] = (100 * 0.10 * order.tickerprice + order.optionprice)
+                    Margin[:,2] = (50 + 100*order.optionprice)
+                    return np.max(Margin)
+                else:
+                    raise Exception('This is not an option type')
+            elif order.assettype == ASSET_TYPE_STOCK:
+                return order.tickerprice*order.quantity*0.5
+            else:
+                raise Exception('This is not a supported asset type. Use the constants ASSET_TYPE_*')
+        else:
+            raise Exception('We are not ready to calculate short stock margins')
