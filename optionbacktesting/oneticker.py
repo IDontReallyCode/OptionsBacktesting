@@ -43,35 +43,51 @@ class OneTicker():
         self.currentdatetime = currentdatetime
 
 
-    def gettickerdata(self):
+    def getstockdata(self):
+        """
+            returns all the underlying stock data up until the current datetime
+        """
         return self._tickerts[self._tickerts["datetime"]<=self.currentdatetime]
 
 
     def getoptiondata(self):
+        """
+            returns all the option data up until the current datetime
+        """
         return self._optionts[self._optionts["datetime"]<=self.currentdatetime]
 
 
     def getoptionsnapshot(self):
+        """
+            returns the currentdatetime snapshot for the option chain
+        """
         thisday = str(self.currentdatetime.date())
         return self._optionts[self._optionts["datetime"]==thisday]
+        # [TODO] Update this to work for both daily and intrady data
 
     
     def getcurrentstockcandle(self):
+        """
+            Returns only the last candle
+        """
         candle = self._tickerts[self._tickerts["datetime"]==self.currentdatetime]
         if candle.empty:
             sofar = self._tickerts[self._tickerts["datetime"]<=self.currentdatetime]
             candle = sofar.iloc[-1:]
         return candle
-        # thisday = str(self.currentdatetime.date())
-        # return self._tickerts[self._tickerts["datetime"]==thisday]
 
     
     def getoptionsymbolsnapshot(self, symbol):
+        """
+            Get the latest optin snapshot, but only for 1 specific option, based on it's unique symbol
+        """
         thisday = str(self.currentdatetime.date())
         return self._optionts[(self._optionts["datetime"]==thisday) & (self._optionsts['symbol']==symbol)]
 
 
     def verifydata(self):
         """
-
+            Verifies the DataFrames for the right columns and data types
         """
+        # [TODO]
+        pass
