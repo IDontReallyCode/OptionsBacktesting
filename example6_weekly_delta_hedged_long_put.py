@@ -141,6 +141,17 @@ def main():
     fig.suptitle('Buy a put on Monday, Delta hedge it all week, close position on Friday')
     plt.show()
 
+
+    
+    print('all orders submitted')
+    print(pd.DataFrame(mydealer.orderlistall))
+    # [TODO] have the action print as BUY or SELL instead of 1 or -1
+
+    print('\nall orders executed')
+    print(pd.DataFrame(mydealer.orderlistexecuted))
+
+
+
     pausehere=1
 
 

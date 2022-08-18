@@ -224,7 +224,7 @@ class Dealer():
         self.market = marketdata
         self.orderlistwaiting = []
         self.orderlistexecuted = []
-        self.orderall = []
+        self.orderlistall = []
         self.optiontradingcost = optiontradingcost
 
 
@@ -234,7 +234,7 @@ class Dealer():
         """
         for eachorder in orderlist:
             self.orderlistwaiting.append(eachorder)
-            self.orderall.append(eachorder.__dict__)
+            self.orderlistall.append(eachorder.__dict__)
 
 
     def gothroughorders(self)->list[Trade]:
@@ -248,6 +248,7 @@ class Dealer():
                 trade = self.checkorder(order)
                 if trade is not None:
                     alltrades.append(trade)
+                    self.orderlistexecuted.append(order.__dict__)
                 else:
                     stillwaiting.append(order)
 

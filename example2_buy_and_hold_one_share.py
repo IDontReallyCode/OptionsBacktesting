@@ -62,6 +62,14 @@ def main():
     ax2.set_title('position value VS stock price \n(position value is updated after the fact. \nthis is why it is lagged)')
     fig.tight_layout()
     plt.show()
+
+    print('all orders submitted')
+    print(pd.DataFrame(mydealer.orderlistall))
+    # [TODO] have the action print as BUY or SELL instead of 1 or -1
+
+    print('\nall orders executed')
+    print(pd.DataFrame(mydealer.orderlistexecuted))
+
     pausehere=1
 
 

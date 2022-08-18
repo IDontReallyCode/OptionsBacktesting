@@ -64,7 +64,10 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             self.outgoingorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
                                     symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1, ordertype=ORDER_TYPE_MARKET))
         elif self.movingaveragesignl[self.timer]==-1:
-            self.outgoingorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+            # we do not want to go short first, so we check if we have the stock before we sell
+            wehavethestock = self.account.positions.getpositionsofticker(ticker=self.marketdata.tickernames[0])
+            if wehavethestock:
+                self.outgoingorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
                                     symbol=self.marketdata.tickernames[0], action=SELL_TO_CLOSE, quantity=1, ordertype=ORDER_TYPE_MARKET))
         else:
             pass
@@ -96,20 +99,30 @@ def main():
 
     mychronos.execute()
 
-    print(myaccount.positions.mypositions)
-    fig, (ax1,ax2,ax3) = plt.subplots(3,1, sharex=True, sharey=False)
-    ax1.plot(uniquedaydates[longma+1:], myaccount.totalvaluests)
-    ax1.set_title('Account value')
-    ax2.plot(uniquedaydates, mystrategy.movingaverage_long)
-    ax2.plot(uniquedaydates, mystrategy.movingaverageshort)
-    ax2.set_title('Moving Averages')
-    ax3.plot(uniquedaydates, mystrategy.movingaveragesignl)
-    ax3.set_title('Buy{1}/Sell{0} signal')
-    fig.tight_layout()
-    plt.show()
+    # print(myaccount.positions.mypositions)
+    # fig, (ax1,ax2,ax3) = plt.subplots(3,1, sharex=True, sharey=False)
+    # ax1.plot(uniquedaydates[longma+1:], myaccount.totalvaluests)
+    # ax1.set_title('Account value')
+    # ax2.plot(uniquedaydates, mystrategy.movingaverage_long)
+    # ax2.plot(uniquedaydates, mystrategy.movingaverageshort)
+    # ax2.set_title('Moving Averages')
+    # ax3.plot(uniquedaydates, mystrategy.movingaveragesignl)
+    # ax3.set_title('Buy{1}/Sell{0} signal')
+    # fig.tight_layout()
+    # plt.show()
     # plt.plot(uniquedaydates, myaccount.positionvaluests)
     # plt.plot(uniquedaydates, stockdata['close'])
     # plt.show()
+
+    
+    print('all orders submitted')
+    print(pd.DataFrame(mydealer.orderlistall))
+    # [TODO] have the action print as BUY or SELL instead of 1 or -1
+
+    print('\nall orders executed')
+    print(pd.DataFrame(mydealer.orderlistexecuted))
+
+
     pausehere=1
 
 
