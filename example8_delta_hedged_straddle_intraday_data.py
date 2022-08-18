@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 # from pyparsing import col
 import optionbacktesting as obt
-# import datetime
+import datetime
 import matplotlib.pyplot as plt
 
 class MyStrategy(obt.abstractstrategy.Strategy):
@@ -39,7 +39,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             # unless the previous position was not closed
             currentoptionpositions = self.account.positions.getoptionpositions(self.marketdata.tickernames[0])
             if not currentoptionpositions:
-                optionsnapshot = self.marketdata.SAMPLE.getoptionsnapshot()
+                optionsnapshot = self.marketdata.tickerlist[0].getoptionsnapshot()
                 # we want to trade 21+ dte option
                 # we filter only those with 21+, then pick the first date because it is sorted by dte
                 targetexpdate = optionsnapshot[(optionsnapshot['dte']>=21)].iloc[0]['expirationdate']
@@ -64,7 +64,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             optionpositions = self.account.positions.getoptionpositions(self.marketdata.tickernames[0])
             if optionpositions:
                 optionsymbol = list(optionpositions.keys())[0]
-                optionsnapshot = self.marketdata.SAMPLE.getoptionsnapshot()
+                optionsnapshot = self.marketdata.tickerlist[0].getoptionsnapshot()
                 newdelta = optionsnapshot[optionsnapshot['symbol']==optionsymbol].iloc[0]['delta']
                 
                 if newdelta<-1:
@@ -99,40 +99,74 @@ class MyStrategy(obt.abstractstrategy.Strategy):
 
 
 def main():
-    myaccount = obt.Account(deposit=2000)
-    optiondta = pd.read_csv("./SAMPLEdailyoption.csv", index_col=0)
-    stockdata = pd.read_csv("./SAMPLEdailystock.csv", index_col=0)
-    stockdata['datetime'] = pd.to_datetime(stockdata['date_eod'])
-    # TODO  when creating the datetime column, it needs to be a datetime format.
-    optiondta['datetime'] = pd.to_datetime(optiondta['date_eod']) # required column
-    optiondta.rename(columns={'oi':'openinterest', 'date_mat':'expirationdate'}, inplace=True)
-    optiondta['symbol'] = optiondta['ticker'] + optiondta['pcflag'].astype(str) + optiondta['k'].astype(str) + optiondta['expirationdate']
-    uniquedaydates = pd.DataFrame(optiondta['date_eod'].unique(), columns=['datetime'])
-    uniquedaydates['datetime'] = pd.to_datetime(uniquedaydates['datetime'])
+    """
+        In this example, we have intraday data fro both the stock and the options. 
+        However, the timestamps don't match. That's not a problem at all, and is a lot more realistic of algorithmic trading. The data arrives when it arrives.
 
-    tickerSAMPLE = obt.OneTicker(tickername='SAMPLE', tickertimeseries=stockdata, optionchaintimeseries=optiondta)
+
+        We will use the datetime from the stock data to run the show, i.e., set the chronology for Chronos
+
+    """
+    myaccount = obt.Account(deposit=2000)
+    optiondta = pd.read_csv("./FOOintradayoption.csv", index_col=0)
+    optiondta['symbol'] = optiondta['ticker'] + optiondta['pcflag'].astype(str) + optiondta['k'].astype(str) + optiondta['expirationdate']
+    optiondta.sort_values(by=['datetime', 'pcflag', 'dte', 'k'], inplace=True)
+    # optiondta['datetime2'] = pd.to_datetime(optiondta['datetime'].values, infer_datetime_format=True)
+    # optiondta['datetime3'] = pd.to_datetime(optiondta['datetime'].values.astype(str), infer_datetime_format=True)
+    optiondta['datetime'] = optiondta['datetime'].values.astype(str)
+    optiondta['datetime'] = optiondta['datetime'].str.replace('-04:00','')
+    optiondta['datetime'] = pd.to_datetime(optiondta['datetime'].values, infer_datetime_format=True)
+
+    # optiondta.set_index('datetime', inplace=True)
+
+    stockdata = pd.read_csv("./FOOintradaystock.csv", index_col=0)
+    # stockdata['datetime'] = pd.to_datetime(stockdata['tdate'])
+    # stockdata['datetime'] = stockdata['datetime'].dt.tz_localize('UTC').dt.tz_convert("US/Eastern")
+    # stockdata['date_eod'] = stockdata['datetime'].dt.date
+    # stockdata['justtimetofilter'] = stockdata['datetime'].dt.time
+    # stockdata.drop(['total_volume', 'avg_trade_size', 'time_beg', 'vwap', 'opening_price', 'tick_vwap', 'time_end', 'save_date'], axis=1, inplace=True)
+    # resample to 5min candles AAAANNNNNDDDDDD make the datetime column the index.
+    # stockdata = stockdata.resample('10min', on='datetime').last().dropna()
+    stockdata['datetime'] = pd.to_datetime(stockdata['timestamp'])
+    stockdata['datetimeindex'] = stockdata['datetime']
     
-    mymarket = obt.Market([tickerSAMPLE],['SAMPLE']) # <== When dealing with options, we need to have this match the ticker in the option data file
+    # stockdata.rename(columns={'timestamp':'datetime'}, inplace=True)
+    # filterout pre and post market data
+    stockdata.set_index('datetimeindex', inplace=True)
+    stockdata = stockdata.between_time(datetime.time(8), datetime.time(15), include_start=True, include_end=True) 
+
+    uniquetimesteps = pd.DataFrame(stockdata['datetime'].unique(), columns=['datetime'])
+    uniquetimesteps['datetime'] = pd.to_datetime(uniquetimesteps['datetime'])
+
+    tempcheckoptionfrequ = pd.DataFrame(optiondta['datetime'].unique(), columns=['datetime'])
+    tempcheckoptionfrequ['datetime'] = pd.to_datetime(tempcheckoptionfrequ['datetime'])
+
+    firstoptiondate = np.datetime64(tempcheckoptionfrequ.iloc[0]['datetime']).astype(datetime.datetime)
+    wheretostart = uniquetimesteps.loc[uniquetimesteps['datetime']<firstoptiondate].index[-1]
+
+    tickerSAMPLE = obt.OneTicker(tickername='FOO', tickertimeseries=stockdata, optionchaintimeseries=optiondta)
+    
+    mymarket = obt.Market([tickerSAMPLE],['FOO']) # <== When dealing with options, we need to have this match the ticker in the option data file
     mydealer = obt.Dealer(marketdata=mymarket)
     mystrategy = MyStrategy()
-    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
+    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquetimesteps)
 
-    mychronos.primingthestrategyat(1)
+    mychronos.primingthestrategyat(wheretostart)
 
     mychronos.execute()
 
 
     fig, (ax1,ax2,ax3,ax4,ax5) = plt.subplots(5,1, sharex=False, sharey=False)
-    ax1.plot(uniquedaydates[-len(myaccount.totalvaluests):], myaccount.totalvaluests)
+    ax1.plot(uniquetimesteps[-len(myaccount.totalvaluests):], myaccount.totalvaluests)
     ax1.yaxis.set_major_formatter('${x:1.2f}')
     ax1.set_title('Account value')
-    ax2.plot(uniquedaydates[-len(myaccount.totalvaluests):],stockdata.iloc[-len(myaccount.totalvaluests):]['close'],label='close')
+    ax2.plot(uniquetimesteps[-len(myaccount.totalvaluests):],stockdata.iloc[-len(myaccount.totalvaluests):]['close'],label='close')
     ax2.yaxis.set_major_formatter('${x:1.2f}')
     ax2.legend()
     ax2.set_title('Stock Price')
-    ax3.plot(uniquedaydates[-len(mystrategy.stockpositions):], mystrategy.stockpositions)
+    ax3.plot(uniquetimesteps[-len(mystrategy.stockpositions):], mystrategy.stockpositions)
     ax3.set_title('Stock positions')
-    ax4.plot(uniquedaydates[-len(mystrategy.deltavalues):], mystrategy.deltavalues)
+    ax4.plot(uniquetimesteps[-len(mystrategy.deltavalues):], mystrategy.deltavalues)
     ax4.set_title('Delta values')
     ax5.stem(mystrategy.buydates,1*np.ones(len(mystrategy.buydates),),linefmt='green')
     ax5.stem(mystrategy.selldates,-1*np.ones(len(mystrategy.selldates),),linefmt='red')

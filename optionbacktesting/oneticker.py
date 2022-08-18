@@ -61,8 +61,15 @@ class OneTicker():
         """
             returns the currentdatetime snapshot for the option chain
         """
-        thisday = str(self.currentdatetime.date())
-        return self._optionts[self._optionts["datetime"]==thisday]
+        snapshot = self._optionts[self._optionts["datetime"]==self.currentdatetime]
+        if snapshot.empty:
+            sofar = self._optionts[self._optionts["datetime"]<=self.currentdatetime]
+            lasttimestamp = sofar.iloc[-1]['datetime']
+            snapshot = self._optionts[self._optionts['datetime']==lasttimestamp]
+
+        return snapshot
+        # thisday = str(self.currentdatetime.date())
+        # return self._optionts[self._optionts["datetime"]==thisday]
         # [TODO] Update this to work for both daily and intrady data
 
     

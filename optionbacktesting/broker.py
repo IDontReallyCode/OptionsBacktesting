@@ -24,6 +24,7 @@ MARGINTYPE_TDA = 1          # Follow the guide here : https://www.tdameritrade.c
 
 
 
+
 class Order():
     """
         This is just a glorified Dictionary
