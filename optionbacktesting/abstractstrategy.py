@@ -11,12 +11,12 @@ from .broker import Order, Account
 """
 
 class Strategy(ABC):
-    def __init__(self) -> None:
+    def __init__(self, outgoingorders:list[Order]=[], waitingorders:list[Order]=[]) -> None:
         """
             A strategy will receive new data through a CALL from chronos.
         """
-        self.outgoingorders = [None]
-        self.waitingorders = [None]
+        self.outgoingorders = outgoingorders
+        self.waitingorders = waitingorders
 
         super().__init__()
 
@@ -55,7 +55,6 @@ class Strategy(ABC):
         # [TODO] Check what we actually need here and not
         self.waitingorders = marketfeedback
         self.accountfeedback = accountfeedback
-        self.theseorders = []
-        self.doatrade = False
-        return self.theseorders
+        self.outgoingorders = []
+        return self.outgoingorders
         # pass

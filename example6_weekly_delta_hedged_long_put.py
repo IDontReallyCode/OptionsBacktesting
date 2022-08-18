@@ -52,10 +52,10 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                 targetput = optionsnapshot[(optionsnapshot['k']==targetstrike) & (optionsnapshot['pcflag']==0) & (optionsnapshot['expirationdate']==targetexpdate)]
                 self.deltavalues.append(targetput.iloc[0]['delta'])
                 # Friday has passed, we put an order in for next Monday, buy a put of 14+ dte
-                self.theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetput.iloc[0]['symbol'], 
+                self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetput.iloc[0]['symbol'], 
                                         action=obt.BUY_TO_OPEN, quantity=+1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetput.iloc[0]['pcflag'], 
                                         k=targetput.iloc[0]['k'], expirationdate=targetput.iloc[0]['expirationdate']))
-                self.theseorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_STOCK, symbol=targetput.iloc[0]['ticker'], 
+                self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_STOCK, symbol=targetput.iloc[0]['ticker'], 
                                         action=obt.BUY_TO_OPEN, quantity=20))
                 self.buydates.append((self.marketdata.currentdatetime))
 
@@ -74,10 +74,10 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                     stockposition = self.account.positions.getstockquantityforticker(self.marketdata.tickernames[0])
                     quantityadjustementtodeltahedge = -1*(stockposition+(newdelta*100).astype(int))
                     if quantityadjustementtodeltahedge>0:
-                        self.theseorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
+                        self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
                                 action=obt.BUY_TO_OPEN, quantity=abs(quantityadjustementtodeltahedge)))
                     else:
-                        self.theseorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
+                        self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
                                 action=obt.SELL_TO_CLOSE, quantity=abs(quantityadjustementtodeltahedge)))
                     
 
@@ -88,14 +88,14 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             if optionpositions:
                 optionsymbol = list(optionpositions.keys())[0]
                 optionstosell = self.account.positions.getoptionquantity(self.marketdata.tickernames[0], optionsymbol)
-                self.theseorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_OPTION, symbol=optionsymbol, 
+                self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_OPTION, symbol=optionsymbol, 
                                         action=obt.SELL_TO_CLOSE, quantity=+1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=optionpositions[optionsymbol]['pcflag'], 
                                         k=optionpositions[optionsymbol]['k'], expirationdate=optionpositions[optionsymbol]['expirationdate']))
-                self.theseorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
+                self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
                                         action=obt.SELL_TO_CLOSE, quantity=sharestosell))
                 self.selldates.append((self.marketdata.currentdatetime))
                 self.deltavalues.append(0)
-        return self.theseorders
+        return self.outgoingorders
 
 
 def main():

@@ -32,11 +32,11 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             samecandle = self.marketdata.ABCDEFG.getcurrentstockcandle()
             howmuch = self.account.capital
             howmany = int(howmuch/samecandle.iloc[0]['high'])
-            self.theseorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+            self.outgoingorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
                                     symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=howmany, ordertype=ORDER_TYPE_LIMIT,
                                     triggerprice=samecandle.iloc[0]['high']))
         
-        return self.theseorders
+        return self.outgoingorders
         
         
 

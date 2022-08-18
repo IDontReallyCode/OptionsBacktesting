@@ -26,6 +26,7 @@ MARGINTYPE_TDA = 1          # Follow the guide here : https://www.tdameritrade.c
 
 
 class Order():
+    __orderid = -1
     """
         This is just a glorified Dictionary
         ## Orders
@@ -60,8 +61,11 @@ class Order():
         self.pcflag = pcflag                        # Put Call Flag for option
         self.k = k                                  # Strike of option
         self.expirationdate = expirationdate        # expiration date of option
+        Order.__orderid +=1
+        self.orderid = Order.__orderid
 
-
+    # def __str__(self) -> str:
+        
 
 class Trade():
     """
@@ -220,6 +224,7 @@ class Dealer():
         self.market = marketdata
         self.orderlistwaiting = []
         self.orderlistexecuted = []
+        self.orderall = []
         self.optiontradingcost = optiontradingcost
 
 
@@ -229,6 +234,7 @@ class Dealer():
         """
         for eachorder in orderlist:
             self.orderlistwaiting.append(eachorder)
+            self.orderall.append(eachorder.__dict__)
 
 
     def gothroughorders(self)->list[Trade]:
