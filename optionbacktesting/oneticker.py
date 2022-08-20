@@ -1,4 +1,4 @@
-# import numpy as np
+import numpy as np
 import pandas as pd
 # import datetime
 
@@ -88,8 +88,15 @@ class OneTicker():
         """
             Get the latest optin snapshot, but only for 1 specific option, based on it's unique symbol
         """
-        thisday = str(self.currentdatetime.date())
-        return self._optionts[(self._optionts["datetime"]==thisday) & (self._optionsts['symbol']==symbol)]
+        snapshot = self._optionts[(self._optionts["datetime"]==self.currentdatetime) & (self._optionts['symbol']==symbol)]
+        if snapshot.empty:
+            sofar = self._optionts[(self._optionts["datetime"]<=self.currentdatetime) & (self._optionts['symbol']==symbol)]
+            lasttimestamp = sofar.iloc[-1]['datetime']
+            snapshot = sofar[self._optionts['datetime']==lasttimestamp]
+
+        return snapshot
+        # thisday = str(self.currentdatetime.date())
+        # return self._optionts[(self._optionts["datetime"]==thisday) & (self._optionts['symbol']==symbol)]
 
 
     def verifydata(self):
@@ -98,3 +105,9 @@ class OneTicker():
         """
         # [TODO]
         pass
+
+
+    def stocktimeseriestoplot(self):
+        x = np.array(self._tickerts['datetime'])
+        y = np.array(self._tickerts['close'])
+        return x, y

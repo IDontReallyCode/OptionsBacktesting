@@ -57,12 +57,14 @@ class Chronos():
                 if assettypes=='equity':
                     lateststockcandle = self.market.__dict__[tickers].getcurrentstockcandle()
                     totalpositionvalues += self.account.positions.mypositions[tickers]['equity']['quantity']*lateststockcandle.iloc[0]['close']
-                elif assettypes=='option':
+                elif assettypes=='options':
                     for symbols in self.account.positions.mypositions[tickers]['options']:
                         latestoptionsymbolrecord = self.market.__dict__[tickers].getoptionsymbolsnapshot(symbols)
-                        done=1
-        if (self.account.capital+totalpositionvalues)<0:
-            wtf=1
+                        markprice = (latestoptionsymbolrecord.iloc[0]['bid'] + latestoptionsymbolrecord.iloc[0]['ask'])/2
+                        totalpositionvalues += self.account.positions.mypositions[tickers]['options'][symbols]['quantity']*markprice*100
+
+        # if (self.account.capital+totalpositionvalues)<0:
+        #     wtf=1
         self.account.positionvalues = totalpositionvalues
         self.account.positionvaluests.append(totalpositionvalues)
         self.account.totalvaluests.append(self.account.capital+totalpositionvalues)
@@ -79,15 +81,15 @@ class Chronos():
             # 1. Tell the `Market` to move one step in time by passing the next `['datetime']`
             self.market.timepass(self.chronology['datetime'].iloc[timeindex])
             # 2. Tell the `Dealer` execute orders.
-            dealerfeedback = self.dealer.gothroughorders()
-            if dealerfeedback is not None:
-                # 3. Tell the `Account` to update based on the `Trade`s 
-                accountfeedback = self.account.update(dealerfeedback)
-            else:
-                # TODO Check what else we could need here
-                accountfeedback = self.account.capital
+            tradelist = self.dealer.gothroughorders()
+            # if tradelist[] is not None:
+            #     # 3. Tell the `Account` to update based on the `Trade`s 
+            accountfeedback = self.account.update(tradelist)
+            # else:
+            #     # TODO Check what else we could need here
+                # accountfeedback = self.account.capital
             # 4. Tell the `Strategy` to update,    
-            strategyfeedback = self.strategy.estimatestrategy(dealerfeedback, accountfeedback)
+            strategyfeedback = self.strategy.estimatestrategy(tradelist, accountfeedback)
             
             self.dealer.sendorder(strategyfeedback)
 
@@ -114,8 +116,8 @@ class Chronos():
         
         if len(allclosingorders)>0:
             self.dealer.sendorder(allclosingorders)
-            dealerfeedback = self.dealer.gothroughorders()
-            if dealerfeedback is not None:
-                accountfeedback = self.account.update(dealerfeedback)
+            tradelist = self.dealer.gothroughorders()
+            if tradelist is not None:
+                accountfeedback = self.account.update(tradelist)
             self._updatepositionvalues()
         

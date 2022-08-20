@@ -68,6 +68,7 @@ class Order():
         
 
 class Trade():
+    __tradeid = -1
     """
         This is just a glorified "change" in position
     """
@@ -75,6 +76,8 @@ class Trade():
         self.datetime = datetime
         self.positionchange = positionchange
         self.cashflow = cashflow
+        Trade.__tradeid +=1
+        self.tradeid = Trade.__tradeid
 
 
 
@@ -93,7 +96,7 @@ class Positions():
         pass
 
 
-    def changestockposition(self, tickerid:int, ticker:str, quantity:int, tradeprice:float):
+    def _changestockposition(self, tickerid:int, ticker:str, quantity:int, tradeprice:float):
         # for stocks
         if ticker not in self.mypositions:
             self.mypositions[ticker] = {'equity': {'tickerid':tickerid, 'symbol':ticker, 'quantity':quantity, 'tradeprice':tradeprice}}
@@ -115,7 +118,7 @@ class Positions():
         return self.mypositions
 
 
-    def changeoptionposition(self, tickerid:int, ticker:str, quantity:int, tradeprice:float, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp):
+    def _changeoptionposition(self, tickerid:int, ticker:str, quantity:int, tradeprice:float, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp):
         # for options
         if ticker not in self.mypositions:
             # if ticker is not there at all
@@ -191,7 +194,14 @@ class Positions():
             return 0
 
 
-    def getpositionsofticker(self, ticker)->dict:
+    def getstockposition(self, ticker:str)->dict:
+        if ticker in self.mypositions:
+            if 'equity' in self.mypositions[ticker]:
+                return self.mypositions[ticker]['equity']
+
+        return {}
+
+    def getpositionsofticker(self, ticker:str)->dict:
         if ticker in self.mypositions:
             return self.mypositions[ticker]  
         else:
@@ -256,7 +266,7 @@ class Dealer():
             self.orderlistwaiting = stillwaiting
             return alltrades
         else:
-            return None
+            return []
 
 
     def checkorder(self, thisorder:Order)->Trade:
@@ -476,17 +486,14 @@ class Account():
             # if we opened a new position, check if we already have a position like that, and add
             # if we closed a position, find the position and remove it
             if thistrade.positionchange['assettype']==ASSET_TYPE_OPTION:
-                self.positions.changeoptionposition(thistrade.positionchange['tickerid'], thistrade.positionchange['ticker'], thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'],
+                self.positions._changeoptionposition(thistrade.positionchange['tickerid'], thistrade.positionchange['ticker'], thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'],
                                             symbol=thistrade.positionchange['symbol'], pcflag=thistrade.positionchange['pcflag'], k=thistrade.positionchange['k'],
                                             expirationdate=thistrade.positionchange['expirationdate'])
             elif thistrade.positionchange['assettype']==ASSET_TYPE_STOCK:
-                self.positions.changestockposition(tickerid=thistrade.positionchange['tickerid'] , ticker=thistrade.positionchange['ticker'], 
+                self.positions._changestockposition(tickerid=thistrade.positionchange['tickerid'] , ticker=thistrade.positionchange['ticker'], 
                                                     quantity=thistrade.positionchange['quantity'], tradeprice=thistrade.positionchange['tradeprice'])
             else:
                 raise Exception('It makes no sense to end up here!')
-
-        if self.capital<0:
-            stopwtf=1
 
         return self.capital
         

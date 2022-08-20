@@ -136,7 +136,7 @@ def main():
     ax4.set_title('Delta values')
     ax5.stem(mystrategy.buydates,1*np.ones(len(mystrategy.buydates),),linefmt='green')
     ax5.stem(mystrategy.selldates,-1*np.ones(len(mystrategy.selldates),),linefmt='red')
-    ax4.set_title('Buy and sells of the put')
+    ax5.set_title('Buy and sells of the put')
     fig.tight_layout()
     fig.suptitle('Buy a put on Monday, Delta hedge it all week, close position on Friday')
     plt.show()

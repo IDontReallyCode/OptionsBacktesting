@@ -229,6 +229,7 @@ def main():
     mymarket = obt.Market([tickerSAMPLE],['FOO']) # <== When dealing with options, we need to have this match the ticker in the option data file
     mydealer = obt.Dealer(marketdata=mymarket)
     mystrategy = MyStrategy(ratioRV_tohedge= 1, ratioPNL_takeprofit= .5, ratioPNL_takeloss= -0.5, ratioRV_takeloss= 0.5)
+    
     mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquetimesteps)
 
     mychronos.primingthestrategyat(wheretostart)
