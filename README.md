@@ -77,7 +77,8 @@ The dataFrame "MUST" be fed with these columns
 ["date_eod", "datetime", "optionsymbol", "ticker", "pcflag", "k", "dte", "expirationdate", "bid", "ask", "bid_size", "ask_size", "openinterest", "volume"]
 
 #### *IMPORTANT*
-Data should be sorted by pcflag, k, dte
+Data should be sorted by datetime, pcflag, k, dte 
+*TODO: Verify if this is still required.
 
 
 ### All DataFrame
