@@ -37,7 +37,7 @@ Executing means:
 2. Tell the `Dealer` execute orders.
    - The `Dealer` has a list of waiting `Order`s.
    - The `Dealer` loops through all waiting orders and tries to execute them.
-     - The `Dealer` will play the role of the clients broker here and verify that the account can execute the order
+     - The `Dealer` will play the role of the clients' broker here and verify that the account can execute the order
        - So, it will check that there is enough capital and  get the margin [TODO]
      - If an `Order` is executed, it is removed from the queue, and a `Trade` is created
      - If and `Order` is canceled because of lack of capital or margin, a feedback is sent to the strategy [TODO]
@@ -82,7 +82,6 @@ Data should be sorted by datetime, pcflag, k, dte
 
 
 ### All DataFrame
-
 'datetime' column needs to be of datetime format
 
 Other columns can be there if you need them for strategy.
@@ -102,35 +101,41 @@ The only thing is that the user will be responsible for accessign only the data 
 ## Orders
 [FOR NOW AT LEAST]
 
-An order will be:
-- tickerindex: int
-- asset type: {stock=0, option=1}
-- action: {BUY to open, SELL to close, SELL to close(all), SELL to open, BUY to close, BUY to close(all) }
-- quantity: int
-- type: {market=0, limit=1, stop=2}
-- triggerprice: float
-- k: float
-- expirationdate: str/date format
+        An order will be:
+            - tickerindex: int      {the index number of the asset, makes things easier for the coding}
+            - ticker: str           {Get it from Market.tickernames[tickerindex]}
+            - asset type:           {ASSET_TYPE_STOCK = 0, ASSET_TYPE_OPTION = 1}
+            - symbol: str           {the ticker for a stock, the unique symbol for an option}
+            - action:               {BUY_TO_OPEN = 1, SELL_TO_CLOSE = -1}
+            - quantity: int 
+            - ordertype:            {ORDER_TYPE_MARKET = 0, ORDER_TYPE_LIMIT = 1, ORDER_TYPE_STOP = 2}
+            - tickerprice: float    {Required for margin calculation when shorting options}
+            - optionprice: float    {Required for margin calculation when shorting options}
+            - triggerprice: float   {for contingent orders}
+            - put call flag         {put=0, call=1}
+            - strike k
+            - expiration date
 
 
 ## Positions
 [FOR NOW AT LEAST]
 
 A position is defined by:
-- ticker: str
-- asset type: {stock=0, option=1}
-- quantity: int {+ for long, - for short}
-- k: float
-- expirationdate: str/date format
-
+    mypositions = {'tic1': {'equity': {'symbol': 'AMD', 'quantity': 5, 'tradeprice':18.56}, 
+                            'options': {'optionsymbol1': {'quantity': 5, 'pcflag': 0, 'k':10.0, 'expirationdate':'2000-01-01', 'tradeprice':5.56}, 
+                                    'optionsymbol2': {'quantity': 5, 'pcflag': 0, 'k':20.0, 'expirationdate':'2000-01-01', 'tradeprice':1.56} }},
+                    'tic2': {'equity':{'symbol': 'AAPL', 'quantity': 5, 'tradeprice':154.23}},
+                    'tic3': {'options':{'optionsymbol1': {'quantity': 5, 'pcflag': 0, 'k':10.0, 'expirationdate':'2000-01-01', 'tradeprice':0.56}, 
+                                    'optionsymbol2': {'quantity': 5, 'pcflag': 0, 'k':20.0, 'expirationdate':'2000-01-01', 'tradeprice':1.56} }}
+                    }
 
 ## Trades
-[FOR NOW AT LEAST]
 
-When trading options where the data has bid/ask, we always assuming the worse case scenario and BUY at ask, SELL at bid
+When trading options where the data has bid/ask, we allow for multiple types of execution between the bid-ask. Worst Case Scenario, Best Case Scenario, at 25%, 50%, or 75% of the bid-ask spread, or at a random price between the bid-ask spread.
 
-When trading stock where the data is OHLC, we trade at Open (of following candle)
-
+When trading stock where the data is OHLC, we trade at Open (of following candle) [For now, at least]
+[TODO] For a Market order, we can trade at different levels between the low and high. Even a random price between the two.
+[TODO] For Limit/Stop order, we can allow the trade if the limit/stop is between the low-high.
 
 
 ## Margins
@@ -164,11 +169,12 @@ So here is what I settle for, for now:
 # TODO
 - Category :: Priority :: Description
 - Dealer :: low :: Deal with exercise of options at maturity
-- Account :: high :: estimate the margin on a short single option
+- ~~Account :: high :: estimate the margin on a short single option~~
 - Account :: med :: recognize the margin on known spreads, like verticals
 - ~~Account :: med :: update the capital and the position values at each time steps to be able to assess the strategy standard deviation.~~
 - Order :: med :: GTC and DAY contingent orders
 - Dealer :: med :: Provide feedback on canceled orders
-- Dealer :: med :: Provide flexibility on how trades are executed (bid-ask and OHLC)
+- Dealer :: med :: Provide flexibility on how trades are executed (bid-ask and OHLC) Done for options
 - Account :: med :: Look at how the marked price is determined.
+- Chronos :: high :: make strategies and matching accounts in lists so we can treat multiple strategies at once
 
