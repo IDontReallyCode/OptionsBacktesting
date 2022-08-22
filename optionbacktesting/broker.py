@@ -20,6 +20,12 @@ MARGINTYPE_NONE = 0         # No margin calculated  (In this basic mode, even wh
 MARGINTYPE_TDA = 1          # Follow the guide here : https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
 # TODO MARGINTYPE_PORTFOLIO = 2    # Use a portfolio margin approach based on risk
 
+TRAD_METH_OPTN_WCS = 0      # Buy at ask, sell at bid
+TRAD_METH_OPTN_BCS = 1      # Buy at bid, sell at ask
+TRAD_METH_OPTN_MID = 2      # Buy and sell and mid price
+TRAD_METH_OPTN_25P = 3      # Buy at 25% of bid-ask over bid, sell 25% of bid-ask below ask
+TRAD_METH_OPTN_75P = 4      # Buy at 75% of bid-ask over bid, sell 75% of bid-ask below ask
+TRAD_METH_OPTN_RND = 5      # Buy and sell at a random price between bid-ask
 
 
 
@@ -234,15 +240,20 @@ class Dealer():
     """
         Dealer will deal with receiving orders, holding them in a list, and executing them when possible.
     """
-    def __init__(self, marketdata:Market, optiontradingcost:float = 0.65) -> None:
+    def __init__(self, marketdata:Market, optiontradingcost:float = 0.65, optiontradeprice=TRAD_METH_OPTN_WCS, rngseed=1) -> None:
         """
             We initialize the broker/dealer with all the data
         """
+        SEQ = np.random.SeedSequence(rngseed)
+        SeedSeq = SEQ.spawn(1)
+        self.rngstream = [np.random.default_rng(s) for s in SeedSeq]
+
         self.market = marketdata
         self.orderlistwaiting = []
         self.orderlistexecuted = []
         self.orderlistall = []
         self.optiontradingcost = optiontradingcost
+        self.tradmethoptn = optiontradeprice
 
 
     def sendorder(self, orderlist:list[Order]):
@@ -309,6 +320,7 @@ class Dealer():
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     # [TODO] This is where we allow for some flexibility in the how trades are executed
                     tradeprice = thisoption.iloc[0]['ask']
+
                     cashflow = -tradeprice*np.abs(thisorder.quantity)*100
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
@@ -405,6 +417,19 @@ class Dealer():
         return trade
     
 
+    def getoptionbuyprice(self, datarecord:pd.DataFrame)->float:
+        if self.tradmethoptn == TRAD_METH_OPTN_WCS:
+            tradeprice = datarecord['ask']
+        elif self.tradmethoptn == TRAD_METH_OPTN_BCS:
+            tradeprice = datarecord['bid']
+        elif self.tradmethoptn == TRAD_METH_OPTN_25P:
+            tradeprice = datarecord['bid'] + 0.25*(datarecord['ask']-datarecord['bid'])
+        elif self.tradmethoptn == TRAD_METH_OPTN_MID:
+            tradeprice = datarecord['bid'] + 0.50*(datarecord['ask']-datarecord['bid'])
+        elif self.tradmethoptn == TRAD_METH_OPTN_75P:
+            tradeprice = datarecord['bid'] + 0.75*(datarecord['ask']-datarecord['bid'])
+        elif self.tradmethoptn == TRAD_METH_OPTN_WCS:
+            tradeprice = datarecord['bid'] + self.rngstream[0].uniform()*(datarecord['ask']-datarecord['bid'])
 
 
 
@@ -445,35 +470,6 @@ class Account():
             Simply return how much money is available for a trade
         """
         return self._capital - self.margin
-
-
-    # def margincostoftrade(self, tradedetails:dict)-> float:
-    #     """
-    #         Since this class will have what it takes to deal with margins, the methods to know the margin of a trade will be right in here.
-            
-    #         From: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
-    #         Uncovered equity options
-    #             Because writing uncovered—or naked—options represents greater risk of loss, the margin account requirements are higher. The writing
-    #             of uncovered puts and calls requires an initial deposit and maintenance of the greatest of the following three formulas:
-    #             a) 20% of the underlying stock²⁷ less the out-of-the-money amount, if any, plus 100% of the current market value of the option(s).
-    #             b) For calls, 10% of the market value of the underlying stock PLUS the premium value. For puts, 10% of the exercise value of the
-    #             underlying stock PLUS the premium value.
-    #             or
-    #             c) $50 per contract plus 100% of the premium.
-    #     """
-    #     if self.margintype==MARGINTYPE_NONE:
-    #         return 0.0
-    #     elif self.margintype==MARGINTYPE_TDA:
-    #         # here is some old code I can use 
-    #         # OTM = npspot[0,0] - Merged[['k']].to_numpy()
-    #         # OTM[OTM<0] = 0
-    #         # Margin = np.zeros((len(OTM),3))
-    #         # Margin[:,0] = (100 * 0.20 * npspot[0,0] + Merged[['ask']].to_numpy() - OTM).T
-    #         # Margin[:,1] = (100 * 0.10 * Merged[['k']].to_numpy() + Merged[['ask']].to_numpy()).T
-    #         # Margin[:,2] = (50 + Merged[['ask']].to_numpy()).T
-    #         return 0
-    #     else:
-    #         return 0
 
 
     def priming(self, currentdatetime:pd.Timestamp):
