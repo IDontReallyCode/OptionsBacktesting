@@ -319,7 +319,7 @@ class Dealer():
                                             & (optionchain['k']==thisorder.k) 
                                             & (optionchain['expirationdate']==thisorder.expirationdate)]
                     # [TODO] This is where we allow for some flexibility in the how trades are executed
-                    tradeprice = thisoption.iloc[0]['ask']
+                    tradeprice = self.getoptionbuyprice(thisoption.iloc[0])
 
                     cashflow = -tradeprice*np.abs(thisorder.quantity)*100
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
@@ -365,7 +365,7 @@ class Dealer():
                 thisoption = optionchain[(optionchain['pcflag']==thisorder.pcflag) 
                                         & (optionchain['k']==thisorder.k) 
                                         & (optionchain['expirationdate']==thisorder.expirationdate)]
-                tradeprice = thisoption['bid'].iloc[0]
+                tradeprice = self.getoptionsellprice(thisoption.iloc[0])
 
                 dosell = False
                 if thisorder.ordertype==ORDER_TYPE_MARKET:
@@ -377,7 +377,7 @@ class Dealer():
                     if tradeprice<=thisorder.triggerprice:
                         dosell=True
                 else:
-                    raise Exception("What type of order are you trying to do? Use the pre-determined constants")
+                    raise Exception("What type of order are you trying to do? Use the pre-determined CONSTANTS ORDER_TYPE_*")
                 
                 if dosell:
                     cashflow = +tradeprice*np.abs(thisorder.quantity)*100
@@ -428,9 +428,29 @@ class Dealer():
             tradeprice = datarecord['bid'] + 0.50*(datarecord['ask']-datarecord['bid'])
         elif self.tradmethoptn == TRAD_METH_OPTN_75P:
             tradeprice = datarecord['bid'] + 0.75*(datarecord['ask']-datarecord['bid'])
-        elif self.tradmethoptn == TRAD_METH_OPTN_WCS:
+        elif self.tradmethoptn == TRAD_METH_OPTN_RND:
             tradeprice = datarecord['bid'] + self.rngstream[0].uniform()*(datarecord['ask']-datarecord['bid'])
+        else:
+            raise Exception("WTF are you trying to do here? This is not even a trade method. Please use the CONSTANTS provided. TRAD_METH_*")
+        return tradeprice
 
+
+    def getoptionsellprice(self, datarecord:pd.DataFrame)->float:
+        if self.tradmethoptn == TRAD_METH_OPTN_WCS:
+            tradeprice = datarecord['bid']
+        elif self.tradmethoptn == TRAD_METH_OPTN_BCS:
+            tradeprice = datarecord['ask']
+        elif self.tradmethoptn == TRAD_METH_OPTN_25P:
+            tradeprice = datarecord['ask'] - 0.25*(datarecord['ask']-datarecord['bid'])
+        elif self.tradmethoptn == TRAD_METH_OPTN_MID:
+            tradeprice = datarecord['ask'] - 0.50*(datarecord['ask']-datarecord['bid'])
+        elif self.tradmethoptn == TRAD_METH_OPTN_75P:
+            tradeprice = datarecord['ask'] - 0.75*(datarecord['ask']-datarecord['bid'])
+        elif self.tradmethoptn == TRAD_METH_OPTN_RND:
+            tradeprice = datarecord['bid'] + self.rngstream[0].uniform()*(datarecord['ask']-datarecord['bid'])
+        else:
+            raise Exception("WTF are you trying to do here? This is not even a trade method. Please use the CONSTANTS provided. TRAD_METH_*")
+        return tradeprice
 
 
 class Account():

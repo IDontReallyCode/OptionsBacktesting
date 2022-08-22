@@ -113,7 +113,12 @@ def main():
     tickerSAMPLE = obt.OneTicker(tickername='SAMPLE', tickertimeseries=stockdata, optionchaintimeseries=optiondta)
     
     mymarket = obt.Market([tickerSAMPLE],['SAMPLE']) # <== When dealing with options, we need to have this match the ticker in the option data file
-    mydealer = obt.Dealer(marketdata=mymarket)
+    # mydealer = obt.Dealer(marketdata=mymarket, optiontradeprice=obt.TRAD_METH_OPTN_WCS)
+    # mydealer = obt.Dealer(marketdata=mymarket, optiontradeprice=obt.TRAD_METH_OPTN_BCS)
+    # mydealer = obt.Dealer(marketdata=mymarket, optiontradeprice=obt.TRAD_METH_OPTN_25P)
+    # mydealer = obt.Dealer(marketdata=mymarket, optiontradeprice=obt.TRAD_METH_OPTN_MID)
+    # mydealer = obt.Dealer(marketdata=mymarket, optiontradeprice=obt.TRAD_METH_OPTN_75P)
+    mydealer = obt.Dealer(marketdata=mymarket, optiontradeprice=obt.TRAD_METH_OPTN_RND)
     mystrategy = MyStrategy()
     mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
 
