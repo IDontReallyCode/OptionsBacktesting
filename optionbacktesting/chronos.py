@@ -43,7 +43,6 @@ class Chronos():
         self.startingdatetime = self.chronology['datetime'].iloc[self.startingtimestep]
 
         self.market.priming(self.startingdatetime)
-        # self.dealer.priming(self.startingdatetime)
         self.account.priming(self.startingdatetime)
         self.strategy.priming(self.market, self.account)
 
@@ -63,8 +62,6 @@ class Chronos():
                         markprice = (latestoptionsymbolrecord.iloc[0]['bid'] + latestoptionsymbolrecord.iloc[0]['ask'])/2
                         totalpositionvalues += self.account.positions.mypositions[tickers]['options'][symbols]['quantity']*markprice*100
 
-        # if (self.account.capital+totalpositionvalues)<0:
-        #     wtf=1
         self.account.positionvalues = totalpositionvalues
         self.account.positionvaluests.append(totalpositionvalues)
         self.account.totalvaluests.append(self.account.capital+totalpositionvalues)

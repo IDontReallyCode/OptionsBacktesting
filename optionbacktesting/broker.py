@@ -2,7 +2,6 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from .market import Market
-# from .accounts import Position
 
 ASSET_TYPE_STOCK = 0
 ASSET_TYPE_OPTION = 1
@@ -12,9 +11,9 @@ ORDER_TYPE_LIMIT = 1
 ORDER_TYPE_STOP = 2
 
 BUY_TO_OPEN = 1
-BUY_TO_CLOSE = 1
+BUY_TO_CLOSE = 2
 SELL_TO_OPEN = -1
-SELL_TO_CLOSE = -1
+SELL_TO_CLOSE = -2
 # TODO, for now a BUY is a BUY, to open or close.
 
 MARGINTYPE_NONE = 0         # No margin calculated  (In this basic mode, even when shorting a naked call, no margin is calculated)
@@ -36,10 +35,12 @@ class Order():
             - tickerindex: int      {the index number of the asset, makes things easier for the coding}
             - ticker: str           {Get it from Market.tickernames[tickerindex]}
             - asset type:           {ASSET_TYPE_STOCK = 0, ASSET_TYPE_OPTION = 1}
-            - position:             {BUY_TO_OPEN = 1, SELL_TO_CLOSE = -1}
+            - symbol: str           {the ticker for a stock, the unique symbol for an option}
+            - action:               {BUY_TO_OPEN = 1, SELL_TO_CLOSE = -1}
             - quantity: int 
             - ordertype:            {ORDER_TYPE_MARKET = 0, ORDER_TYPE_LIMIT = 1, ORDER_TYPE_STOP = 2}
             - tickerprice: float    {Required for margin calculation when shorting options}
+            - optionprice: float    {Required for margin calculation when shorting options}
             - triggerprice: float   {for contingent orders}
             - put call flag         {put=0, call=1}
             - strike k
@@ -64,13 +65,14 @@ class Order():
         Order.__orderid +=1
         self.orderid = Order.__orderid
 
-    # def __str__(self) -> str:
+    # to print an order, simply use Order.__dict__
         
+
 
 class Trade():
     __tradeid = -1
     """
-        This is just a glorified "change" in position
+        This is just a glorified dictionary with a positionchange dictionary
     """
     def __init__(self, datetime:pd.Timestamp, positionchange:dict, cashflow:float) -> None:
         self.datetime = datetime
@@ -83,6 +85,7 @@ class Trade():
 
 class Positions():
     """
+    literally a dictionary...
     mypositions = {'tic1': {'equity': {'symbol': 'AMD', 'quantity': 5, 'tradeprice':18.56}, 
                             'options': {'optionsymbol1': {'quantity': 5, 'pcflag': 0, 'k':10.0, 'expirationdate':'2000-01-01', 'tradeprice':5.56}, 
                                     'optionsymbol2': {'quantity': 5, 'pcflag': 0, 'k':20.0, 'expirationdate':'2000-01-01', 'tradeprice':1.56} }},
@@ -96,29 +99,34 @@ class Positions():
         pass
 
 
-    def _changestockposition(self, tickerid:int, ticker:str, quantity:int, tradeprice:float):
+    def _changestockposition(self, tickerid:int, ticker:str, quantity:int, tradeprice:float)->dict:
         # for stocks
         if ticker not in self.mypositions:
             self.mypositions[ticker] = {'equity': {'tickerid':tickerid, 'symbol':ticker, 'quantity':quantity, 'tradeprice':tradeprice}}
         else:
+            # We have or had that ticker in our Positions
             if 'equity' in self.mypositions[ticker]:
+                # we have that stock in our Positions
                 if self.mypositions[ticker]['equity']['quantity']*quantity<0:
+                    # We are either selling some of our long shares, or buying back some of our short shares
                     self.mypositions[ticker]['equity']['quantity']+=quantity
                     if self.mypositions[ticker]['equity']['quantity']==0:
                         self.mypositions[ticker].pop('equity')
                 else:
+                    # We are increasing our position (long or short) and we need to update the average price
                     currentquantity = self.mypositions[ticker]['equity']['quantity']
                     newaveragetradeprice = (currentquantity*self.mypositions[ticker]['equity']['tradeprice'] 
                                             + quantity*tradeprice)/(currentquantity+quantity)
                     self.mypositions[ticker]['equity']['quantity']+=quantity
                     self.mypositions[ticker]['equity']['tradeprice']=newaveragetradeprice
             else:
+                # just a new position
                 self.mypositions[ticker]['equity'] = {'tickerid':tickerid, 'symbol':ticker, 'quantity':quantity, 'tradeprice':tradeprice}
 
         return self.mypositions
 
 
-    def _changeoptionposition(self, tickerid:int, ticker:str, quantity:int, tradeprice:float, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp):
+    def _changeoptionposition(self, tickerid:int, ticker:str, quantity:int, tradeprice:float, symbol:str, pcflag:int, k:float, expirationdate:pd.Timestamp)->dict:
         # for options
         if ticker not in self.mypositions:
             # if ticker is not there at all
@@ -136,7 +144,6 @@ class Positions():
                         currentquantity = self.mypositions[ticker]['options'][symbol]['quantity']
                         if (currentquantity+quantity)==0:
                             raise Exception("We should not get here. I leave the code, just to check. The if should be removed.")
-                            # self.mypositions[ticker]['options'].pop(symbol)
                         else:
                             newaveragetradeprice = (currentquantity*self.mypositions[ticker]['options'][symbol]['tradeprice'] 
                                                     + quantity*tradeprice)/(currentquantity+quantity)
@@ -152,7 +159,7 @@ class Positions():
         return self.mypositions
 
 
-    def getoptionpositions(self, ticker:str, symbol:str=None):
+    def getoptionpositions(self, ticker:str, symbol:str=None)->dict:
         if ticker in self.mypositions:
             if symbol is None:
                 if 'options' in self.mypositions[ticker]:
@@ -198,8 +205,8 @@ class Positions():
         if ticker in self.mypositions:
             if 'equity' in self.mypositions[ticker]:
                 return self.mypositions[ticker]['equity']
-
         return {}
+
 
     def getpositionsofticker(self, ticker:str)->dict:
         if ticker in self.mypositions:
