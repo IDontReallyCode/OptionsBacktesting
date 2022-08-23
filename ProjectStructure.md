@@ -24,5 +24,4 @@
    -  `Strategy`
    -  `pd.DataFrame'  time series to drive the back test.
 
-# Chronos
 
