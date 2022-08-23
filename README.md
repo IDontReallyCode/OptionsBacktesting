@@ -177,4 +177,4 @@ So here is what I settle for, for now:
 - [ ] Dealer :: med :: Provide flexibility on how trades are executed (bid-ask and OHLC) Done for options
 - [ ] Account :: med :: Look at how the marked price is determined.
 - [ ] Chronos :: high :: make strategies and matching accounts in lists so we can treat multiple strategies at once
-
+- [ ] Strategy :: low :: Provide some basic strategies that the user can add automatically, like buy-and-hold for ticker [0]
