@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from .abstractstrategy import Strategy
-from .broker import BUY_TO_CLOSE, ORDER_TYPE_MARKET, SELL_TO_CLOSE, Dealer, Account, ASSET_TYPE_OPTION, ASSET_TYPE_STOCK
+from .broker import *
 # from .accounts import Account
 from .market import Market
 
@@ -134,6 +134,10 @@ class Chronos():
                 self.dealer.sendorder(allclosingorders)
                 tradelist = self.dealer.gothroughorders()
                 if tradelist is not None:
-                    accountfeedback = self.accountlist[index].update(tradelist)
+                    if index in tradelist:
+                        accountfeedback = self.accountlist[index].update(tradelist[index])
+                    else:
+                        accountfeedback = []
+                        tradelist[index] = []
                 self._updatepositionvalues()
         

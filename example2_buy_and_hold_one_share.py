@@ -28,7 +28,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             self.holdingnow = True
 
         if not self.holdingnow:
-            self.outgoingorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+            self.outgoingorders.append(obt.Order(self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
                                     symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1))
         
         return self.outgoingorders
@@ -36,7 +36,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         
 
 def main():
-    myaccount = obt.Account(deposit=1000)
+    myaccount = [obt.Account(deposit=1000)]
     stockdata = pd.read_csv("./SAMPLEdailystock.csv", index_col=0)
     stockdata['datetime'] = pd.to_datetime(stockdata['date_eod'])
     uniquedaydates = pd.DataFrame(stockdata['date_eod'].unique(), columns=['datetime'])
@@ -46,18 +46,18 @@ def main():
     
     mymarket = obt.Market([tickerRANDOM],['RANDOM'])
     mydealer = obt.Dealer(marketdata=mymarket)
-    mystrategy = MyStrategy()
-    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
+    mystrategy = [MyStrategy()]
+    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccounts=myaccount, clientstrategies=mystrategy, chronology=uniquedaydates)
 
     mychronos.primingthestrategyat(0)
 
     mychronos.execute()
 
-    print(myaccount.positions.mypositions)
+    print(myaccount[0].positions.mypositions)
     fig, (ax1, ax2) = plt.subplots(2,1, sharex=True, sharey=False)
-    ax1.plot(uniquedaydates, myaccount.totalvaluests)
+    ax1.plot(uniquedaydates, myaccount[0].totalvaluests)
     ax1.set_title('Account value')
-    ax2.plot(uniquedaydates, myaccount.positionvaluests)
+    ax2.plot(uniquedaydates, myaccount[0].positionvaluests)
     ax2.plot(uniquedaydates, stockdata['close'])
     ax2.set_title('position value VS stock price \n(position value is updated after the fact. \nthis is why it is lagged)')
     fig.tight_layout()

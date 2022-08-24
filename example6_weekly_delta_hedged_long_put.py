@@ -52,10 +52,10 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                 targetput = optionsnapshot[(optionsnapshot['k']==targetstrike) & (optionsnapshot['pcflag']==0) & (optionsnapshot['expirationdate']==targetexpdate)]
                 self.deltavalues.append(targetput.iloc[0]['delta'])
                 # Friday has passed, we put an order in for next Monday, buy a put of 14+ dte
-                self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetput.iloc[0]['symbol'], 
+                self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= targetput.iloc[0]['symbol'], 
                                         action=obt.BUY_TO_OPEN, quantity=+1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=targetput.iloc[0]['pcflag'], 
                                         k=targetput.iloc[0]['k'], expirationdate=targetput.iloc[0]['expirationdate']))
-                self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_STOCK, symbol=targetput.iloc[0]['ticker'], 
+                self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex = 0, ticker=targetput.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_STOCK, symbol=targetput.iloc[0]['ticker'], 
                                         action=obt.BUY_TO_OPEN, quantity=20))
                 self.buydates.append((self.marketdata.currentdatetime))
 
@@ -74,10 +74,10 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                     stockposition = self.account.positions.getstockquantityforticker(self.marketdata.tickernames[0])
                     quantityadjustementtodeltahedge = -1*(stockposition+(newdelta*100).astype(int))
                     if quantityadjustementtodeltahedge>0:
-                        self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
+                        self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
                                 action=obt.BUY_TO_OPEN, quantity=abs(quantityadjustementtodeltahedge)))
                     else:
-                        self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
+                        self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
                                 action=obt.SELL_TO_CLOSE, quantity=abs(quantityadjustementtodeltahedge)))
                     
 
@@ -88,10 +88,10 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             if optionpositions:
                 optionsymbol = list(optionpositions.keys())[0]
                 optionstosell = self.account.positions.getoptionquantity(self.marketdata.tickernames[0], optionsymbol)
-                self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_OPTION, symbol=optionsymbol, 
+                self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_OPTION, symbol=optionsymbol, 
                                         action=obt.SELL_TO_CLOSE, quantity=+1, ordertype=obt.ORDER_TYPE_MARKET, pcflag=optionpositions[optionsymbol]['pcflag'], 
                                         k=optionpositions[optionsymbol]['k'], expirationdate=optionpositions[optionsymbol]['expirationdate']))
-                self.outgoingorders.append(obt.Order(tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
+                self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex = 0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, symbol=self.marketdata.tickernames[0], 
                                         action=obt.SELL_TO_CLOSE, quantity=sharestosell))
                 self.selldates.append((self.marketdata.currentdatetime))
                 self.deltavalues.append(0)
@@ -99,7 +99,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
 
 
 def main():
-    myaccount = obt.Account(deposit=2000)
+    myaccount = [obt.Account(deposit=2000)]
     optiondta = pd.read_csv("./SAMPLEdailyoption.csv", index_col=0)
     stockdata = pd.read_csv("./SAMPLEdailystock.csv", index_col=0)
     stockdata['datetime'] = pd.to_datetime(stockdata['date_eod'])
@@ -119,8 +119,8 @@ def main():
     # mydealer = obt.Dealer(marketdata=mymarket, optiontradeprice=obt.TRAD_METH_OPTN_MID)
     # mydealer = obt.Dealer(marketdata=mymarket, optiontradeprice=obt.TRAD_METH_OPTN_75P)
     mydealer = obt.Dealer(marketdata=mymarket, optiontradeprice=obt.TRAD_METH_OPTN_RND)
-    mystrategy = MyStrategy()
-    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
+    mystrategy = [MyStrategy()]
+    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccounts=myaccount, clientstrategies=mystrategy, chronology=uniquedaydates)
 
     mychronos.primingthestrategyat(1)
 
@@ -128,19 +128,19 @@ def main():
 
 
     fig, (ax1,ax2,ax3,ax4,ax5) = plt.subplots(5,1, sharex=False, sharey=False)
-    ax1.plot(uniquedaydates[-len(myaccount.totalvaluests):], myaccount.totalvaluests)
+    ax1.plot(uniquedaydates[-len(myaccount[0].totalvaluests):], myaccount[0].totalvaluests)
     ax1.yaxis.set_major_formatter('${x:1.2f}')
     ax1.set_title('Account value')
-    ax2.plot(uniquedaydates[-len(myaccount.totalvaluests):],stockdata.iloc[-len(myaccount.totalvaluests):]['close'],label='close')
+    ax2.plot(uniquedaydates[-len(myaccount[0].totalvaluests):],stockdata.iloc[-len(myaccount[0].totalvaluests):]['close'],label='close')
     ax2.yaxis.set_major_formatter('${x:1.2f}')
     ax2.legend()
     ax2.set_title('Stock Price')
-    ax3.plot(uniquedaydates[-len(mystrategy.stockpositions):], mystrategy.stockpositions)
+    ax3.plot(uniquedaydates[-len(mystrategy[0].stockpositions):], mystrategy[0].stockpositions)
     ax3.set_title('Stock positions')
-    ax4.plot(uniquedaydates[-len(mystrategy.deltavalues):], mystrategy.deltavalues)
+    ax4.plot(uniquedaydates[-len(mystrategy[0].deltavalues):], mystrategy[0].deltavalues)
     ax4.set_title('Delta values')
-    ax5.stem(mystrategy.buydates,1*np.ones(len(mystrategy.buydates),),linefmt='green')
-    ax5.stem(mystrategy.selldates,-1*np.ones(len(mystrategy.selldates),),linefmt='red')
+    ax5.stem(mystrategy[0].buydates,1*np.ones(len(mystrategy[0].buydates),),linefmt='green')
+    ax5.stem(mystrategy[0].selldates,-1*np.ones(len(mystrategy[0].selldates),),linefmt='red')
     ax5.set_title('Buy and sells of the put')
     fig.tight_layout()
     fig.suptitle('Buy a put on Monday, Delta hedge it all week, close position on Friday')

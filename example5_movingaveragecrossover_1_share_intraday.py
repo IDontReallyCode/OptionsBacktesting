@@ -29,7 +29,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
     def priming(self, marketdata: obt.Market, account: obt.Account):
         super().priming(marketdata, account)
 
-        historicaldata = self.marketdata.CARROT.gettickerdata()
+        historicaldata = self.marketdata.CARROT.getstockdata()
         self.movingaverage_long[0] = np.average(historicaldata.iloc[-self.ma_long__length:]['close'])
         self.movingaverageshort[0] = np.average(historicaldata.iloc[-self.ma_short_length:]['close'])
         self.timer = 1
@@ -62,10 +62,10 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         
 
         if self.movingaveragesignl[self.timer]==1:
-            self.outgoingorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+            self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
                                     symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1, ordertype=ORDER_TYPE_MARKET))
         elif self.movingaveragesignl[self.timer]==-1:
-            self.outgoingorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+            self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
                                     symbol=self.marketdata.tickernames[0], action=SELL_TO_CLOSE, quantity=1, ordertype=ORDER_TYPE_MARKET))
         else:
             pass
@@ -76,7 +76,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         
 
 def main():
-    myaccount = obt.Account(deposit=1000)
+    myaccount = [obt.Account(deposit=1000)]
     stockdata = pd.read_csv("./SAMPLEintradaystock.csv", index_col=0)
     stockdata['datetime'] = pd.to_datetime(stockdata['tdate'])
     stockdata['datetime'] = stockdata['datetime'].dt.tz_localize('UTC').dt.tz_convert("US/Eastern")
@@ -98,23 +98,23 @@ def main():
     mydealer = obt.Dealer(marketdata=mymarket)
     longma = 125
     shrtma = 25
-    mystrategy = MyStrategy(ma_size=len(stockdata), short=shrtma, long=longma)
-    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquetimesteps)
+    mystrategy = [MyStrategy(ma_size=len(stockdata), short=shrtma, long=longma)]
+    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccounts=myaccount, clientstrategies=mystrategy, chronology=uniquetimesteps)
 
     mychronos.primingthestrategyat(longma+1)
 
     mychronos.execute()
 
-    print(myaccount.positions.mypositions)
+    print(myaccount[0].positions.mypositions)
     fig, (ax1,ax2,ax3) = plt.subplots(3,1, sharex=True, sharey=False)
-    ax1.plot(uniquetimesteps[-len(myaccount.totalvaluests):], myaccount.totalvaluests)
+    ax1.plot(uniquetimesteps[-len(myaccount[0].totalvaluests):], myaccount[0].totalvaluests)
     ax1.set_title('Account value')
-    ax2.plot(uniquetimesteps[-len(myaccount.totalvaluests):],stockdata.iloc[-len(myaccount.totalvaluests):]['close'],label='close')
-    ax2.plot(uniquetimesteps[-len(myaccount.totalvaluests):], mystrategy.movingaverage_long[:len(myaccount.totalvaluests)],label='long')
-    ax2.plot(uniquetimesteps[-len(myaccount.totalvaluests):], mystrategy.movingaverageshort[:len(myaccount.totalvaluests)],label='short')
+    ax2.plot(uniquetimesteps[-len(myaccount[0].totalvaluests):],stockdata.iloc[-len(myaccount[0].totalvaluests):]['close'],label='close')
+    ax2.plot(uniquetimesteps[-len(myaccount[0].totalvaluests):], mystrategy[0].movingaverage_long[:len(myaccount[0].totalvaluests)],label='long')
+    ax2.plot(uniquetimesteps[-len(myaccount[0].totalvaluests):], mystrategy[0].movingaverageshort[:len(myaccount[0].totalvaluests)],label='short')
     ax2.legend()
     ax2.set_title('Moving Averages')
-    ax3.plot(uniquetimesteps[-len(myaccount.totalvaluests):], mystrategy.movingaveragesignl[:len(myaccount.totalvaluests)])
+    ax3.plot(uniquetimesteps[-len(myaccount[0].totalvaluests):], mystrategy[0].movingaveragesignl[:len(myaccount[0].totalvaluests)])
     ax3.set_title('Buy{1}/Sell{0} signal')
     fig.tight_layout()
     plt.show()

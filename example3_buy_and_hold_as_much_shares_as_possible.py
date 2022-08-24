@@ -32,7 +32,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             samecandle = self.marketdata.ABCDEFG.getcurrentstockcandle()
             howmuch = self.account.capital
             howmany = int(howmuch/samecandle.iloc[0]['high'])
-            self.outgoingorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+            self.outgoingorders.append(obt.Order(self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
                                     symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=howmany, ordertype=ORDER_TYPE_LIMIT,
                                     triggerprice=samecandle.iloc[0]['high']))
         
@@ -41,7 +41,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         
 
 def main():
-    myaccount = obt.Account(deposit=1000)
+    myaccount = [obt.Account(deposit=1000)]
     stockdata = pd.read_csv("./SAMPLEdailystock.csv", index_col=0)
     stockdata['datetime'] = pd.to_datetime(stockdata['date_eod'])
     uniquedaydates = pd.DataFrame(stockdata['date_eod'].unique(), columns=['datetime'])
@@ -51,15 +51,15 @@ def main():
     
     mymarket = obt.Market([tickerABCDEFG],['ABCDEFG'])
     mydealer = obt.Dealer(marketdata=mymarket)
-    mystrategy = MyStrategy()
-    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
+    mystrategy = [MyStrategy()]
+    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccounts=myaccount, clientstrategies=mystrategy, chronology=uniquedaydates)
 
     mychronos.primingthestrategyat(0)
 
     mychronos.execute()
 
-    print(myaccount.positions.mypositions)
-    plt.plot(uniquedaydates, myaccount.totalvaluests)
+    print(myaccount[0].positions.mypositions)
+    plt.plot(uniquedaydates, myaccount[0].totalvaluests)
     plt.show()
     # plt.plot(uniquedaydates, myaccount.positionvaluests)
     # plt.plot(uniquedaydates, stockdata['close'])

@@ -61,13 +61,13 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         
 
         if self.movingaveragesignl[self.timer]==1:
-            self.outgoingorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+            self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
                                     symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1, ordertype=ORDER_TYPE_MARKET))
         elif self.movingaveragesignl[self.timer]==-1:
             # we do not want to go short first, so we check if we have the stock before we sell
             wehavethestock = self.account.positions.getpositionsofticker(ticker=self.marketdata.tickernames[0])
             if wehavethestock:
-                self.outgoingorders.append(obt.Order(tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+                self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
                                     symbol=self.marketdata.tickernames[0], action=SELL_TO_CLOSE, quantity=1, ordertype=ORDER_TYPE_MARKET))
         else:
             pass
@@ -78,7 +78,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         
 
 def main():
-    myaccount = obt.Account(deposit=1000)
+    myaccount = [obt.Account(deposit=1000)]
     stockdata = pd.read_csv("./SAMPLEdailystock.csv", index_col=0)
     stockdata.rename(columns={'date_eod':'datetime'}, inplace=True)
     stockdata['datetime'] = pd.to_datetime(stockdata['datetime'])
@@ -92,27 +92,27 @@ def main():
     mydealer = obt.Dealer(marketdata=mymarket)
     longma = 126
     shrtma = 21
-    mystrategy = MyStrategy(ma_size=len(stockdata), short=shrtma, long=longma)
-    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccount=myaccount, clientstrategy=mystrategy, chronology=uniquedaydates)
+    mystrategy = [MyStrategy(ma_size=len(stockdata), short=shrtma, long=longma)]
+    mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccounts=myaccount, clientstrategies=mystrategy, chronology=uniquedaydates)
 
     mychronos.primingthestrategyat(longma+1)
 
     mychronos.execute()
 
-    print(myaccount.positions.mypositions)
+    print(myaccount[0].positions.mypositions)
     fig, (ax1,ax2,ax3) = plt.subplots(3,1, sharex=True, sharey=False)
-    ax1.plot(uniquedaydates[-len(myaccount.totalvaluests):], myaccount.totalvaluests)
+    ax1.plot(uniquedaydates[-len(myaccount[0].totalvaluests):], myaccount[0].totalvaluests)
     ax1.set_title('Account value')
-    ax2.plot(uniquedaydates, mystrategy.movingaverage_long)
-    ax2.plot(uniquedaydates, mystrategy.movingaverageshort)
+    ax2.plot(uniquedaydates, mystrategy[0].movingaverage_long)
+    ax2.plot(uniquedaydates, mystrategy[0].movingaverageshort)
     ax2.set_title('Moving Averages')
-    ax3.plot(uniquedaydates, mystrategy.movingaveragesignl)
+    ax3.plot(uniquedaydates, mystrategy[0].movingaveragesignl)
     ax3.set_title('Buy{1}/Sell{0} signal')
     fig.tight_layout()
     plt.show()
-    plt.plot(uniquedaydates, myaccount.positionvaluests)
-    plt.plot(uniquedaydates, stockdata['close'])
-    plt.show()
+    # plt.plot(uniquedaydates[-len(myaccount[0].totalvaluests):], myaccount[0].positionvaluests)
+    # plt.plot(uniquedaydates, stockdata['close'])
+    # plt.show()
 
     
     print('all orders submitted')
