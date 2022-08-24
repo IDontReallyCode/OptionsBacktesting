@@ -1,6 +1,8 @@
 from datetime import datetime
 import numpy as np
 import pandas as pd
+
+# from optionbacktesting.abstractstrategy import Strategy
 from .market import Market
 
 ASSET_TYPE_STOCK = 0
@@ -52,9 +54,10 @@ class Order():
             - strike k
             - expiration date
     """
-    def __init__(self, tickerindex:int, ticker:str, assettype:int, symbol: str, action:int, quantity:int,
+    def __init__(self, strategyid:int, tickerindex:int, ticker:str, assettype:int, symbol: str, action:int, quantity:int,
                  tickerprice:float = 0.0, optionprice:float = 0.0, ordertype:int = ORDER_TYPE_MARKET, triggerprice:float = 0.0, pcflag:int = 1, k:float = 0, expirationdate:str = ''
                  ) -> None:
+        self.strategyid = strategyid                # With multiple strategies at once, we need to identify which strategy submitted which order
         self.tickerindex = tickerindex              # User needs to know the order in which the tickers are loaded
         self.ticker = ticker                        # Ticker string for reference purpose, and dictionary key search
         self.tickerprice = tickerprice              # Required for margin calculation of options
@@ -80,7 +83,8 @@ class Trade():
     """
         This is just a glorified dictionary with a positionchange dictionary
     """
-    def __init__(self, datetime:pd.Timestamp, positionchange:dict, cashflow:float) -> None:
+    def __init__(self, strategyid:int, datetime:pd.Timestamp, positionchange:dict, cashflow:float) -> None:
+        self.strategyid = strategyid
         self.datetime = datetime
         self.positionchange = positionchange
         self.cashflow = cashflow
@@ -265,17 +269,22 @@ class Dealer():
             self.orderlistall.append(eachorder.__dict__)
 
 
-    def gothroughorders(self)->list[Trade]:
+    def gothroughorders(self)->dict:
         """
             Takes the list of 
         """
-        alltrades = []
+        # instead of returning a list of "trades" we can create a dict of trades. with a key for each Strategy
+        # we need a dictionary with a key for each strategyid that has trades.
+        alltrades = {}
         stillwaiting = []
         if len(self.orderlistwaiting)>0:
             for index, order in enumerate(self.orderlistwaiting):
                 trade = self.checkorder(order)
                 if trade is not None:
-                    alltrades.append(trade)
+                    if not order.strategyid in alltrades:
+                        alltrades[order.strategyid] = [trade]
+                    else:
+                        alltrades[order.strategyid].append(trade)
                     self.orderlistexecuted.append(order.__dict__)
                 else:
                     stillwaiting.append(order)
@@ -284,7 +293,7 @@ class Dealer():
             self.orderlistwaiting = stillwaiting
             return alltrades
         else:
-            return []
+            return {}
 
 
     def checkorder(self, thisorder:Order)->Trade:
@@ -325,7 +334,7 @@ class Dealer():
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}                                     
-                    trade = Trade(datetime=self.market.currentdatetime, positionchange=positionchange, cashflow=cashflow)
+                    trade = Trade(thisorder.strategyid, datetime=self.market.currentdatetime, positionchange=positionchange, cashflow=cashflow)
 
             elif thisorder.assettype==ASSET_TYPE_STOCK:
                 # -------
@@ -351,7 +360,7 @@ class Dealer():
                     cashflow = -tradeprice*np.abs(thisorder.quantity)
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
-                    trade = Trade(self.market.currentdatetime, positionchange, cashflow)
+                    trade = Trade(thisorder.strategyid, self.market.currentdatetime, positionchange, cashflow)
             else:
                 # Not a stock, not an option
                 raise Exception("What in the actual ?")
@@ -384,7 +393,7 @@ class Dealer():
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_OPTION,
                                         'pcflag':thisorder.pcflag, 'k':thisorder.k, 'expirationdate':thisorder.expirationdate, 
                                         'symbol':thisorder.symbol}
-                    trade = Trade(self.market.currentdatetime, positionchange, cashflow)
+                    trade = Trade(thisorder.strategyid, self.market.currentdatetime, positionchange, cashflow)
 
             elif thisorder.assettype==ASSET_TYPE_STOCK:
                 # -------
@@ -409,7 +418,7 @@ class Dealer():
                     cashflow = +tradeprice*np.abs(thisorder.quantity)
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
-                    trade = Trade(self.market.currentdatetime, positionchange, cashflow)
+                    trade = Trade(thisorder.strategyid, self.market.currentdatetime, positionchange, cashflow)
 
             else:
                 raise Exception("What in the actual ?")

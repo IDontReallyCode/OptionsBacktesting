@@ -9,13 +9,15 @@ from .broker import Order, Account
 """
 
 class Strategy(ABC):
+    __strategyid = -1
     def __init__(self, outgoingorders:list[Order]=[], waitingorders:list[Order]=[]) -> None:
         """
             A strategy will receive new data through a CALL from chronos.
         """
         self.outgoingorders = outgoingorders
         self.waitingorders = waitingorders
-
+        Strategy.__strategyid += 1
+        self.myid = Strategy.__strategyid
         super().__init__()
 
 
