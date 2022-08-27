@@ -178,3 +178,4 @@ So here is what I settle for, for now:
 - [ ] Account :: med :: Look at how the marked price is determined.
 - [ ] Chronos :: high :: make strategies and matching accounts in lists so we can treat multiple strategies at once
 - [ ] Strategy :: low :: Provide some basic strategies that the user can add automatically, like buy-and-hold for ticker [0]
+- [ ] Account :: med :: automate the tracking of ticker positions
