@@ -1,8 +1,7 @@
-from datetime import datetime
+# from datetime import datetime
 import numpy as np
 import pandas as pd
 
-# from optionbacktesting.abstractstrategy import Strategy
 from .market import Market
 
 ASSET_TYPE_STOCK = 0

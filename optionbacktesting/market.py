@@ -1,10 +1,111 @@
-from typing import Any
 import numpy as np
 import pandas as pd
 import datetime
 
-from optionbacktesting.oneticker import OneTicker
+DATA_TYPE_BA = 0
+DATA_TYPE_OHLC = 1
 
+class OneTicker():
+    """
+        oneticker will contain the time series data of a ticker and it's option chain over a specific frequency (daily or intraday)
+        
+        pd.ticker columns ["date_eod", "datetime", "open", "high", "low", "close", "volume"]
+
+        pd.opions columns ["date_eod", "datetime", "ticker", "pcflag", "k", "dte", "expirationdate", "bid", "ask", "bid_size", "ask_size", "openinterest", "volume"]
+    """
+    def __init__(self, tickername:str, tickertimeseries:pd.DataFrame, optionchaintimeseries:pd.DataFrame, tickerdatatype:int = DATA_TYPE_OHLC, optiondatatype:int = DATA_TYPE_BA) -> None:
+        """
+            We load the entire data sample at once.
+            tickertimeseries HAS TO be a pandas.DataFrame OHLC
+            optionchaintimeseries HAS TO be a pandas.DataFrame bid/ask
+            See Readme.md for details on the data format
+        """
+        self.ticker = tickername
+        self._tickerts = tickertimeseries
+        self.tickertype = tickerdatatype
+        self._optionts = optionchaintimeseries
+        self.optiontype = optiondatatype
+        self.currentdatetime = pd.Timestamp
+
+    
+    def resettimer(self) -> None:
+        """
+            [TODO] Figure out the best way to initialize this
+        """
+        self.currentdatetime = pd.Timestamp
+
+
+    def settime(self, currentdatetime:pd.Timestamp) -> None:
+        """
+            currentdatetime must come from the Chronos.chronology, which has the time series of all time steps to run through for the back testing
+            Setting the time will ensure you get the right data when you need too.
+        """
+        self.currentdatetime = currentdatetime
+
+
+    def getstockdata(self) -> pd.DataFrame:
+        """
+            returns all the underlying stock data up until the current datetime
+        """
+        return self._tickerts[self._tickerts["datetime"]<=self.currentdatetime]
+
+
+    def getoptiondata(self) -> pd.DataFrame:
+        """
+            returns all the option data up until the current datetime
+        """
+        return self._optionts[self._optionts["datetime"]<=self.currentdatetime]
+
+
+    def getoptionsnapshot(self) -> pd.DataFrame:
+        """
+            returns the currentdatetime snapshot for the option chain
+        """
+        snapshot = self._optionts[self._optionts["datetime"]==self.currentdatetime]
+        if snapshot.empty:
+            sofar = self._optionts[self._optionts["datetime"]<=self.currentdatetime]
+            lasttimestamp = sofar.iloc[-1]['datetime']
+            snapshot = self._optionts[self._optionts['datetime']==lasttimestamp]
+
+        return snapshot
+
+    
+    def getcurrentstockcandle(self) -> pd.DataFrame:
+        """
+            Returns only the last candle
+        """
+        candle = self._tickerts[self._tickerts["datetime"]==self.currentdatetime]
+        if candle.empty:
+            sofar = self._tickerts[self._tickerts["datetime"]<=self.currentdatetime]
+            candle = sofar.iloc[-1:]
+        return candle
+
+    
+    def getoptionsymbolsnapshot(self, symbol) -> pd.DataFrame:
+        """
+            Get the latest optin snapshot, but only for 1 specific option, based on it's unique symbol
+        """
+        snapshot = self._optionts[(self._optionts["datetime"]==self.currentdatetime) & (self._optionts['symbol']==symbol)]
+        if snapshot.empty:
+            sofar = self._optionts[(self._optionts["datetime"]<=self.currentdatetime) & (self._optionts['symbol']==symbol)]
+            lasttimestamp = sofar.iloc[-1]['datetime']
+            snapshot = sofar[self._optionts['datetime']==lasttimestamp]
+
+        return snapshot
+
+
+    def verifydata(self):
+        """
+            Verifies the DataFrames for the right columns and data types
+        """
+        # [TODO]
+        pass
+
+
+    def stocktimeseriestoplot(self) -> np.ndarray:
+        x = np.array(self._tickerts['datetime'])
+        y = np.array(self._tickerts['close'])
+        return x, y
 
 
 class Market():
@@ -38,7 +139,6 @@ class Market():
         for index, eachname in enumerate(ExtraNames):
             setattr(self, eachname, ExtraData[index])
 
-
         self.currentdatetime = None
 
 
@@ -49,33 +149,12 @@ class Market():
                 get the data up to the timeindex and return that
         """
         self.currentdatetime = currenttimestamp
-        for index, eachtick in enumerate(self.tickernames):
+        # for index, eachtick in enumerate(self.tickernames):
+        for index in range(len(self.tickernames)):
             self.tickerlist[index].settime(currenttimestamp)
 
-        return self.currentdatetime
 
-
-    def getdatasofar(self, newtimestamp = None)->pd.DataFrame:
-        """
-            Returns all the data that is in the past
-        """
-        # if newtimestamp is not None:
-        #     self.currentdatetime = newtimestamp
-
-        # tickerdatasofar = [None]*self.nbtickers
-        # optiondatasofar = [None]*self.nbtickers
-        # for index, eachticker in enumerate(self.tickerlist):
-        #     if not eachticker.tickerts.empty:
-        #         tickerdatasofar[index] = eachticker.tickerts[eachticker.tickerts['datetime']<self.currentdatetime]
-        #     if not eachticker.optionts.empty:    
-        #         optiondatasofar[index] = eachticker.optionts.loc[eachticker.optionts['datetime']<self.currentdatetime]
-
-        # # [TODO] Analyse and decide whether we should return the data this way, or simply provide the currenttimestamp and have the strategy retrieve the data from the market class
-        # return tickerdatasofar, optiondatasofar
-        pass
-
-
-    def timepass(self, currentdatetime:pd.Timestamp) -> list:
+    def timepass(self, currentdatetime:pd.Timestamp) -> None:
         """
             update the new datetime for the market, but also each ticker
         """
@@ -84,13 +163,9 @@ class Market():
             self.tickerlist[index].settime(currentdatetime)
 
 
-        return self.currentdatetime
-
-
-
-    def resettimer(self) -> None:
-        self.currentdatetime = datetime.datetime.today()
-        pass
+    # def resettimer(self) -> None:
+    #     self.currentdatetime = datetime.datetime.today()
+    #     pass
 
 
 

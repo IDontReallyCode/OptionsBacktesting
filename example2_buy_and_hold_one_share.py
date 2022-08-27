@@ -36,19 +36,29 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         
 
 def main():
-    myaccount = [obt.Account(deposit=1000)]
+    """
+        Get data into a pd.Dataframe
+        Make sure it has the required columns        
+    """
     stockdata = pd.read_csv("./SAMPLEdailystock.csv", index_col=0)
     stockdata['datetime'] = pd.to_datetime(stockdata['date_eod'])
+    """
+        Extract the unique time steps that will be passed to Chronos
+    """
     uniquedaydates = pd.DataFrame(stockdata['date_eod'].unique(), columns=['datetime'])
     uniquedaydates['datetime'] = pd.to_datetime(uniquedaydates['datetime'])
 
+    """
+        Initialize the objects we need to run the strategy back tester
+    """
+    myaccount = [obt.Account(deposit=1000)]
     tickerRANDOM = obt.OneTicker(tickername='RANDOM', tickertimeseries=stockdata, optionchaintimeseries=pd.DataFrame())
-    
     mymarket = obt.Market([tickerRANDOM],['RANDOM'])
     mydealer = obt.Dealer(marketdata=mymarket)
-    mystrategy = [MyStrategy()]
+    mystrategy = [MyStrategy()]                         # Needs to be a list
     mychronos = obt.Chronos(marketdata=mymarket, marketdealer=mydealer, clientaccounts=myaccount, clientstrategies=mystrategy, chronology=uniquedaydates)
 
+    # Tell Chronos were you want to start testing the strategy in the time series of unique time steps by sending the index
     mychronos.primingthestrategyat(0)
 
     mychronos.execute()

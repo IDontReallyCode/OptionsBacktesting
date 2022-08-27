@@ -2,17 +2,12 @@
     This is a basic example:
 
     Strategy:
-        Buy the stock day 1. hold.
+        Buy as many shares of 1 stock day 1. hold.
 """
 
-# import numpy as np
 import pandas as pd
 import optionbacktesting as obt
-# import datetime
 import matplotlib.pyplot as plt
-
-from optionbacktesting.broker import ASSET_TYPE_STOCK, BUY_TO_OPEN, ORDER_TYPE_LIMIT
-
 
 class MyStrategy(obt.abstractstrategy.Strategy):
     def __init__(self) -> None:
@@ -32,8 +27,8 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             samecandle = self.marketdata.ABCDEFG.getcurrentstockcandle()
             howmuch = self.account.capital
             howmany = int(howmuch/samecandle.iloc[0]['high'])
-            self.outgoingorders.append(obt.Order(self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
-                                    symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=howmany, ordertype=ORDER_TYPE_LIMIT,
+            self.outgoingorders.append(obt.Order(self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_STOCK, 
+                                    symbol=self.marketdata.tickernames[0], action=obt.BUY_TO_OPEN, quantity=howmany, ordertype=obt.ORDER_TYPE_LIMIT,
                                     triggerprice=samecandle.iloc[0]['high']))
         
         return self.outgoingorders
@@ -41,14 +36,16 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         
 
 def main():
-    myaccount = [obt.Account(deposit=1000)]
+    # Get the data in a pd.DataFrame
     stockdata = pd.read_csv("./SAMPLEdailystock.csv", index_col=0)
     stockdata['datetime'] = pd.to_datetime(stockdata['date_eod'])
+    # Extract unique time steps
     uniquedaydates = pd.DataFrame(stockdata['date_eod'].unique(), columns=['datetime'])
     uniquedaydates['datetime'] = pd.to_datetime(uniquedaydates['datetime'])
 
+    # initialize the objects for the back testr
+    myaccount = [obt.Account(deposit=1000)]
     tickerABCDEFG = obt.OneTicker(tickername='ABCDEFG', tickertimeseries=stockdata, optionchaintimeseries=pd.DataFrame())
-    
     mymarket = obt.Market([tickerABCDEFG],['ABCDEFG'])
     mydealer = obt.Dealer(marketdata=mymarket)
     mystrategy = [MyStrategy()]
@@ -61,9 +58,9 @@ def main():
     print(myaccount[0].positions.mypositions)
     plt.plot(uniquedaydates, myaccount[0].totalvaluests)
     plt.show()
-    # plt.plot(uniquedaydates, myaccount.positionvaluests)
-    # plt.plot(uniquedaydates, stockdata['close'])
-    # plt.show()
+
+
+
     pausehere=1
 
 

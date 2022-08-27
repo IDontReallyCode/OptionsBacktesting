@@ -1,9 +1,8 @@
-import numpy as np
+# import numpy as np
 import pandas as pd
-from .abstractstrategy import Strategy
-from .broker import *
-# from .accounts import Account
 from .market import Market
+from .broker import *
+from .abstractstrategy import Strategy
 
 class Chronos():
     """
