@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-02-16T16:39:20.563Z" agent="5.0 (Windows)" etag="bZxsSNxCUD4JILgbd273" version="20.8.20" type="github" pages="3">
+<mxfile host="app.diagrams.net" modified="2023-02-16T17:50:15.126Z" agent="5.0 (Windows)" etag="eGxyTPYsB0s6bxhel2tv" version="20.8.20" type="github" pages="3">
   <diagram id="6T5PZeYrQpzY9YffS1K_" name="Data_Structure">
     <mxGraphModel dx="1050" dy="538" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -410,6 +410,42 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="SIw2xSsral609a4KYltv-1" value="TIME_INDEX = TIME_INDEX + 1" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="440" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-7" value="Dealer&#39;s turn" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="560" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-8" value="&lt;div&gt;Receive orders&lt;/div&gt;Waiting / Executed / Canceled" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="560" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-9" value="Try to execute orders" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="640" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-10" value="&lt;div&gt;Update Order Status&lt;/div&gt;Waiting / Executed / Canceled" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="720" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-11" value="Accounts&#39; turn" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="840" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-12" value="Update Cash / Holdings / Margin" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="840" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-13" value="Go through STRATEGY" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="960" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-14" value="Get access to data, up until TIME_INDEX" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="960" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-15" value="Get access to ACCOUNT state" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="1040" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-16" value="Analyze DATA" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="1120" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="SIw2xSsral609a4KYltv-17" value="Send trades to dealer" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="1200" width="240" height="60" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
