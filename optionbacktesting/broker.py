@@ -572,3 +572,9 @@ class Account():
                 raise Exception('This is not a supported asset type. Use the constants ASSET_TYPE_*')
         else:
             raise Exception('We are not ready to calculate short stock margins')
+
+
+    def deposit(self, amount:float):
+        self._capital += amount
+
+        
