@@ -71,7 +71,7 @@ The DataFrame "MUST" be fed with these columns
 
 ### Option chains data
 
-[for now] I  assume the historical data for options was collected from snapshots and has bid/ask data with a certian frequency.
+[for now] I  assume the historical data for options was collected from snapshots and has bid/ask data with a certain frequency.
 
 The dataFrame "MUST" be fed with these columns
 
