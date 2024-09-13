@@ -85,6 +85,7 @@ def main():
     stockdata.drop(['total_volume', 'avg_trade_size', 'time_beg', 'vwap', 'opening_price', 'tick_vwap', 'time_end', 'save_date'], axis=1, inplace=True)
     # resample to 5min candles AAAANNNNNDDDDDD make the datetime column the index.
     stockdata = stockdata.resample('1H', on='datetime').last().dropna()
+    # [TODO] This resample is WRONG. We nee to use .agg() to make sure the high is the high, low is low, etc. (note perso: check HAR package folder)
     stockdata.rename(columns={'tick_volume':'volume', 'tick_open':'open', 'tick_close':'close', 'tick_high':'high', 'tick_low':'low'}, inplace=True)
     # filterout pre and post market data
     stockdata = stockdata.between_time(datetime.time(9), datetime.time(15), include_start=True, include_end=True) 

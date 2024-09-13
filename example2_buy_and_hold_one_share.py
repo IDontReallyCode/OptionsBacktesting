@@ -13,23 +13,31 @@ import matplotlib.pyplot as plt
 
 from optionbacktesting.broker import ASSET_TYPE_STOCK, BUY_TO_OPEN
 
-
+# The first thing to do is to define a strategy that inherits from the abstractstrategy.Strategy class
 class MyStrategy(obt.abstractstrategy.Strategy):
+    # Make sure to call the super().__init__() method
     def __init__(self) -> None:
         super().__init__()
         self.holdingnow = False
 
-
-    def estimatestrategy(self, marketfeedback, accountfeedback):
+    # The main method to implement is the estimatestrategy method
+    def estimatestrategy(self, marketfeedback, accountfeedback)->list[obt.broker.Order]:
+        # Make sure to call the super().estimatestrategy() method
         super().estimatestrategy(marketfeedback, accountfeedback)
 
+        # The strategy we want here is to buy 1 share of the stock IF we don't already have a position
+        # We will check if we have a position by looking at the account.positions.mypositions dictionary
         holdings = self.account.positions.getstockquantityforticker(ticker=self.marketdata.tickernames[0])
         if holdings>0:
+            # We already have a share, we are holding the stock
             self.holdingnow = True
 
         if not self.holdingnow:
-            self.outgoingorders.append(obt.Order(self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
-                                    symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1))
+            # We don't have a position, we will buy 1 share
+            # To do this, we will create an Order object and append it to the self.outgoingorders list
+            myorder = obt.Order(self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+                                symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1)
+            self.outgoingorders.append(myorder)
         
         return self.outgoingorders
         

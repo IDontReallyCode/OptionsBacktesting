@@ -5,7 +5,7 @@ from .market import Market
 from .broker import Order, Account
 
 """
-    Can we define here what a strategy should look like, then ask the user to define and code up their own strategy, yet use this in hte chronos class ???
+    Can we define here what a strategy should look like, then ask the user to define and code up their own strategy, yet use this in the chronos class ???
 """
 
 class Strategy(ABC):

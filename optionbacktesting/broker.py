@@ -274,6 +274,8 @@ class Dealer():
         """
         # instead of returning a list of "trades" we can create a dict of trades. with a key for each Strategy
         # we need a dictionary with a key for each strategyid that has trades.
+        order: Order
+
         alltrades = {}
         stillwaiting = []
         if len(self.orderlistwaiting)>0:
