@@ -1,9 +1,10 @@
 # Classes Structure
 
-- `OneTicker`  [link](./optionbacktesting/oneticker.py)
+
+- `Market`  [link](./optionbacktesting/market.py)
+  - `OneTicker`  [link](./optionbacktesting/oneticker.py)
   - `pd.DataFrame` of stock times series
   - `pd.DataFrame` of option snapshots
-- `Market`  [link](./optionbacktesting/market.py)
   -  `list[OneTicker]`
   -  `list[tickernames:str]`
 -  Broker  [link](./optionbacktesting/broker.py)

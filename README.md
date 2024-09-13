@@ -32,6 +32,7 @@ The second step is to execute. Chronos has a DataFrame with a `['datetime']` col
 Executing means:
 
 #### LOOP:
+[SOMETHING SEEMS OFF IN THE LOGIC HERE]
 1. Tell the `Market` to move one step in time by passing the next `['datetime']`
    - This way, when the `Strategy` (or any other object) accesses data, it can ask for all the data "up until, and including, that datetime", or, "the lastest data", which would be the latest snapshot for options, or the latest candle for stocks. 
 2. Tell the `Dealer` execute orders.
@@ -70,7 +71,7 @@ The DataFrame "MUST" be fed with these columns
 
 ### Option chains data
 
-[for now] I  assume the historical data for options was collected from snapshots and has bid/ask data with a certian frequency.
+[for now] I  assume the historical data for options was collected from snapshots and has bid/ask data with a certain frequency.
 
 The dataFrame "MUST" be fed with these columns
 
