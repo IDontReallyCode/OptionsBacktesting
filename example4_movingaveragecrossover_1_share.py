@@ -10,6 +10,7 @@ import pandas as pd
 import optionbacktesting as obt
 # import datetime
 import matplotlib.pyplot as plt
+import matplotlib.axes as axes
 
 from optionbacktesting.broker import ASSET_TYPE_STOCK, BUY_TO_OPEN, ORDER_TYPE_LIMIT, ORDER_TYPE_MARKET, SELL_TO_CLOSE
 
@@ -99,10 +100,33 @@ def main():
 
     mychronos.execute()
 
+    ax1: axes._axes.Axes
+    ax2: axes._axes.Axes
+    ax3: axes._axes.Axes
     print(myaccount[0].positions.mypositions)
     fig, (ax1,ax2,ax3) = plt.subplots(3,1, sharex=True, sharey=False)
-    ax1.plot(uniquedaydates[-len(myaccount[0].totalvaluests):], myaccount[0].totalvaluests)
+    # ax1.plot(uniquedaydates[-len(myaccount[0].totalvaluests):], myaccount[0].totalvaluests)
+    total_value_padded = np.pad(myaccount[0].totalvaluests, (len(uniquedaydates) - len(myaccount[0].totalvaluests), 0), 'constant', constant_values=(0,))
+    ax1.plot(uniquedaydates, total_value_padded)
     ax1.set_title('Account value')
+    ax1.set_ylim(min(myaccount[0].totalvaluests)-20, max(total_value_padded) + 20)
+
+    # when we prime the strategy, we set the vector as long as the market data, but we set the timer to 1.
+    # Thus, everything is shifted, and we need to pad the signal to match the length that we skipped to prime the strategy
+    mysignal = mystrategy[0].movingaveragesignl
+    mysignal[longma+1:] = mystrategy[0].movingaveragesignl[0:-longma-1]
+    mysignal[0:longma] = 0
+
+    buy_signals = np.where(mysignal == 1)[0]
+    sell_signals = np.where(mysignal == -1)[0]
+
+    
+    ax1.stem(uniquedaydates.loc[buy_signals, 'datetime'], 
+             np.full_like(buy_signals, max(total_value_padded) + 20), 
+             linefmt='g-', markerfmt='go', basefmt=' ', bottom=min(myaccount[0].totalvaluests)-20)
+    ax1.stem(uniquedaydates.loc[sell_signals, 'datetime'], 
+             np.full_like(sell_signals, max(total_value_padded) + 20), 
+             linefmt='r-', markerfmt='ro', basefmt=' ', bottom=min(myaccount[0].totalvaluests)-20)
     ax2.plot(uniquedaydates, mystrategy[0].movingaverage_long)
     ax2.plot(uniquedaydates, mystrategy[0].movingaverageshort)
     ax2.set_title('Moving Averages')

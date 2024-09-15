@@ -362,6 +362,8 @@ class Dealer():
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
                     trade = Trade(thisorder.strategyid, self.market.currentdatetime, positionchange, cashflow)
+                else:
+                    whyamiheredebug=1
             else:
                 # Not a stock, not an option
                 raise Exception("What in the actual ?")
