@@ -18,6 +18,7 @@ import pandas as pd
 import optionbacktesting as obt
 # import datetime
 import matplotlib.pyplot as plt
+import matplotlib.axes as axes
 
 class MyStrategy(obt.abstractstrategy.Strategy):
 
@@ -34,12 +35,12 @@ class MyStrategy(obt.abstractstrategy.Strategy):
 
         self.stockpositions.append(self.account.positions.getstockquantityforticker(self.marketdata.tickernames[0]))
 
-
+        optionsnapshot: pd.DataFrame
         if self.marketdata.currentdatetime.weekday()>=4: #Friday after close => we submit order to open the position
             # unless the previous position was not closed
             currentoptionpositions = self.account.positions.getoptionpositions(self.marketdata.tickernames[0])
             if not currentoptionpositions:
-                optionsnapshot = self.marketdata.SAMPLE.getoptionsnapshot()
+                optionsnapshot = self.marketdata.tickerlist[0].getoptionsnapshot()
                 # we want to trade 21+ dte option
                 # we filter only those with 21+, then pick the first date because it is sorted by dte
                 targetexpdate = optionsnapshot[(optionsnapshot['dte']>=21)].iloc[0]['expirationdate']
@@ -127,6 +128,11 @@ def main():
     mychronos.execute()
 
 
+    ax1: axes._axes.Axes
+    ax2: axes._axes.Axes
+    ax3: axes._axes.Axes
+    ax4: axes._axes.Axes
+    ax5: axes._axes.Axes
     fig, (ax1,ax2,ax3,ax4,ax5) = plt.subplots(5,1, sharex=False, sharey=False)
     ax1.plot(uniquedaydates[-len(myaccount[0].totalvaluests):], myaccount[0].totalvaluests)
     ax1.yaxis.set_major_formatter('${x:1.2f}')
