@@ -252,7 +252,7 @@ class Dealer():
         self.rngstream = [np.random.default_rng(s) for s in SeedSeq]
 
         self.market = marketdata
-        self.orderlistwaiting = []
+        self.orderlistwaiting = {}
         self.orderlistexecuted = []
         self.orderlistall = []
         self.optiontradingcost = optiontradingcost
@@ -264,7 +264,18 @@ class Dealer():
             This is the method through which a strategy sends an order to the dealer to be executed
         """
         for eachorder in neworderlist:
-            self.orderlistwaiting.append(eachorder)
+            # self.orderlistwaiting.append(eachorder)
+            # We will check whether the new order should cancel a previous order
+            # A buy order on a ticker will cancel both a buy and a sell order on the same ticker
+            # A sell order on a ticker will cancel both a buy and a sell order on the same ticker
+            thisorderticker = eachorder.ticker
+            orderstocancel = []
+            for orderid, order in self.orderlistwaiting.items():
+                if order.ticker==thisorderticker:
+                    orderstocancel.append(self.orderlistwaiting[orderid].orderid)
+            for orderid in orderstocancel:
+                del self.orderlistwaiting[orderid]
+            self.orderlistwaiting[eachorder.orderid] = eachorder
             self.orderlistall.append(eachorder.__dict__)
 
 
@@ -277,9 +288,9 @@ class Dealer():
         order: Order
 
         alltrades = {}
-        stillwaiting = []
+        stillwaiting = {}
         if len(self.orderlistwaiting)>0:
-            for index, order in enumerate(self.orderlistwaiting):
+            for index, order in self.orderlistwaiting.items():
                 trade = self.checkorder(order)
                 if trade is not None:
                     if not order.strategyid in alltrades:
@@ -288,7 +299,7 @@ class Dealer():
                         alltrades[order.strategyid].append(trade)
                     self.orderlistexecuted.append(order.__dict__)
                 else:
-                    stillwaiting.append(order)
+                    stillwaiting[order.orderid] = order
 
             # overwrite the list of waiting orders by the list of orders still waiting because they were not executed
             self.orderlistwaiting = stillwaiting
