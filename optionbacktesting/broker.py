@@ -259,11 +259,11 @@ class Dealer():
         self.tradmethoptn = optiontradeprice
 
 
-    def sendorder(self, orderlist:list[Order]):
+    def sendorder(self, neworderlist:list[Order], orderstoremove:list[Order]=[]):
         """
-            This is the method through which a strategy sends an order to the dealer to execute
+            This is the method through which a strategy sends an order to the dealer to be executed
         """
-        for eachorder in orderlist:
+        for eachorder in neworderlist:
             self.orderlistwaiting.append(eachorder)
             self.orderlistall.append(eachorder.__dict__)
 
@@ -422,6 +422,8 @@ class Dealer():
                     positionchange = {'tickerid':thisorder.tickerindex, 'ticker':thisorder.ticker, 'quantity':-np.abs(thisorder.quantity), 'tradeprice':tradeprice, 'assettype':ASSET_TYPE_STOCK,
                                         'symbol':thisorder.ticker}
                     trade = Trade(thisorder.strategyid, self.market.currentdatetime, positionchange, cashflow)
+                else:
+                    whyamiheredebug=1
 
             else:
                 raise Exception("What in the actual ?")

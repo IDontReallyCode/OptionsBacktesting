@@ -6,8 +6,11 @@
         Buy the stock when the short moving average crosses above the long moving average
         Sell the stock when the short moving average crosses below the long moving average
         Hold otherwise
-        Put market orders
+        Use limit orders, limit_buy at 10% below clsoe, limit_sell at 10% above close
+
+        Now, here, we need to manage that if we create a new order, we need to cancel a previous order that was not executed.
 """
+
 
 import numpy as np
 import pandas as pd
@@ -28,6 +31,8 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         self.movingaverageshort = np.zeros((ma_size,))
         self.movingaverage_long = np.zeros((ma_size,))
         self.movingaveragesignl = np.zeros((ma_size,))
+        self.tradebuylist = []
+        self.tradesellist = []
 
 
     def priming(self, marketdata: obt.Market, account: obt.Account):
@@ -66,14 +71,20 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         
 
         if self.movingaveragesignl[self.timer]==1:
-            self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
-                                    symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1, ordertype=ORDER_TYPE_MARKET))
+            mylimit = lastcandle.iloc[0]['close']*0.90
+            myorder = obt.Order(strategyid=self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
+                                symbol=self.marketdata.tickernames[0], action=BUY_TO_OPEN, quantity=1, ordertype=ORDER_TYPE_LIMIT, triggerprice=mylimit)
+            self.tradebuylist.append(myorder.orderid)
+            self.outgoingorders.append(myorder)
         elif self.movingaveragesignl[self.timer]==-1:
             # we do not want to go short first, so we check if we have the stock before we sell
             wehavethestock = self.account.positions.getpositionsofticker(ticker=self.marketdata.tickernames[0])
             if wehavethestock:
-                self.outgoingorders.append(obt.Order(strategyid=self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK, 
-                                    symbol=self.marketdata.tickernames[0], action=SELL_TO_CLOSE, quantity=1, ordertype=ORDER_TYPE_MARKET))
+                mylimit = lastcandle.iloc[0]['close']*1.10
+                myorder = obt.Order(strategyid=self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=ASSET_TYPE_STOCK,
+                                    symbol=self.marketdata.tickernames[0], action=SELL_TO_CLOSE, quantity=1, ordertype=ORDER_TYPE_LIMIT, triggerprice=mylimit)
+                self.tradesellist.append(myorder.orderid)
+                self.outgoingorders.append(myorder)
         else:
             pass
 
