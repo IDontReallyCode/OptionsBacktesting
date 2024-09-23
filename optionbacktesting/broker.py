@@ -268,10 +268,10 @@ class Dealer():
             # We will check whether the new order should cancel a previous order
             # A buy order on a ticker will cancel both a buy and a sell order on the same ticker
             # A sell order on a ticker will cancel both a buy and a sell order on the same ticker
-            thisorderticker = eachorder.ticker
+            thisordersymbol = eachorder.symbol
             orderstocancel = []
             for orderid, order in self.orderlistwaiting.items():
-                if order.ticker==thisorderticker:
+                if order.symbol==thisordersymbol:
                     orderstocancel.append(self.orderlistwaiting[orderid].orderid)
             for orderid in orderstocancel:
                 del self.orderlistwaiting[orderid]

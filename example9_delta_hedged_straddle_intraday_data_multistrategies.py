@@ -180,7 +180,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
 
 def main():
     """
-        In this example, we have intraday data fro both the stock and the options. 
+        In this example, we have intraday data from both the stock and the options. 
         However, the timestamps don't match. That's not a problem at all, and is a lot more realistic of algorithmic trading. The data arrives when it arrives.
 
 

@@ -2,13 +2,15 @@
     This is a basic example:
 
     Strategy:
-        We buy a straddle with the following conditions:
-            - we buy on Monday
-            - next dte >13
-            - we buy the straddle with the maximum Vega
-        We sell the straddle:
-            - if we managed to buy the straddle
-            - we sell on friday
+        On Monday, we buy a put with 21+ DTE
+            We buy a put with a 21 DTE on Monday, with delta as close to 20% as possible:
+                - we buy on Monday
+                - next dte >21
+            We hedge the put with 20 shares of the stock:
+        On the rest of the week, we adjust the hedge to keep the total delta as close to 0% as possible
+            We adjust the hedge to keep the delta as close to 0% as possible
+        On Friday, we close the position
+        
 """
 
 # from calendar import weekday
@@ -19,6 +21,8 @@ import optionbacktesting as obt
 # import datetime
 import matplotlib.pyplot as plt
 import matplotlib.axes as axes
+
+
 
 class MyStrategy(obt.abstractstrategy.Strategy):
 
@@ -47,7 +51,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                 # we want to find the put with delta as close to 20% as possible
                 optionsnapshot = optionsnapshot[(optionsnapshot['expirationdate']==targetexpdate) & (optionsnapshot['pcflag']==0)]
                 optionsnapshot['deltatrigger'] = (optionsnapshot['delta']+0.20)**2
-                trick = optionsnapshot.groupby('k').sum()
+                trick = optionsnapshot.groupby('k').sum(numeric_only=True)
                 targetstrike = trick['deltatrigger'].idxmin()
 
                 targetput = optionsnapshot[(optionsnapshot['k']==targetstrike) & (optionsnapshot['pcflag']==0) & (optionsnapshot['expirationdate']==targetexpdate)]
@@ -65,7 +69,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
             optionpositions = self.account.positions.getoptionpositions(self.marketdata.tickernames[0])
             if optionpositions:
                 optionsymbol = list(optionpositions.keys())[0]
-                optionsnapshot = self.marketdata.SAMPLE.getoptionsnapshot()
+                optionsnapshot = self.marketdata.tickerlist[0].getoptionsnapshot()
                 newdelta = optionsnapshot[optionsnapshot['symbol']==optionsymbol].iloc[0]['delta']
                 
                 if newdelta<-1:
@@ -97,6 +101,8 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                 self.selldates.append((self.marketdata.currentdatetime))
                 self.deltavalues.append(0)
         return self.outgoingorders
+
+
 
 
 def main():
