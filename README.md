@@ -140,16 +140,17 @@ When trading stock where the data is OHLC, we trade at Open (of following candle
 
 
 ## Margins
+THIS IS NO LONGER UP TO DATE SINCE TD is dead
+The margins would be based on Schwab reference web page: [https://www.schwab.com/margin/margin-rates-and-requirements](https://www.schwab.com/margin/margin-rates-and-requirements)
 
-The margins would be based on TD Ameritrade reference document: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
 
-Margin calculations are quite tricky and dependent on multiple factors.
+~~Margin calculations are quite tricky and dependent on multiple factors.~~
 
-So here is what I settle for, for now:
-- Margin requirements will be calculated following the TDA guide above.
-  - For now, I will calculate each position independently.
-  - In the future, I could expand the code to allow trading spreads directly and calculate spread margins.
-- The user of the back testing framework is free to consider the margin or not.
+~~So here is what I settle for, for now:~~
+~~- Margin requirements will be calculated following the TDA guide above.~~
+~~- For now, I will calculate each position independently.~~
+~~- In the future, I could expand the code to allow trading spreads directly and calculate spread margins.~~
+~~- The user of the back testing framework is free to consider the margin or not.~~
 
 ~~However, for now, we take the following approach:~~
 ~~- Make a deposit in the `Account` when you initialize it at a level that "makes sense" based on the strategy you back test.~~
