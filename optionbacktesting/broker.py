@@ -281,22 +281,25 @@ class Dealer():
 
     def gothroughorders(self)->dict:
         """
-            Takes the list of 
+            Takes the list of waiting orders and checks if they can be executed
+            
+            We do not have the account positions here to "execute" or "close" expiring option positions
         """
         # instead of returning a list of "trades" we can create a dict of trades. with a key for each Strategy
         # we need a dictionary with a key for each strategyid that has trades.
         order: Order
 
-        alltrades = {}
+        # alltrades is a dictionary with the strategyid as the key, and the value is a list of trades that were executed
+        alltrades: dict[int, list[Trade]] = {}
         stillwaiting = {}
         if len(self.orderlistwaiting)>0:
             for index, order in self.orderlistwaiting.items():
-                trade = self.checkorder(order)
-                if trade is not None:
+                executedtrade = self.checkorder(order)
+                if executedtrade is not None:
                     if not order.strategyid in alltrades:
-                        alltrades[order.strategyid] = [trade]
+                        alltrades[order.strategyid] = [executedtrade]
                     else:
-                        alltrades[order.strategyid].append(trade)
+                        alltrades[order.strategyid].append(executedtrade)
                     self.orderlistexecuted.append(order.__dict__)
                 else:
                     stillwaiting[order.orderid] = order
@@ -530,6 +533,7 @@ class Account():
         # 1- record the trades from tradelist
         for thistrade in tradelist:
             self.capital += thistrade.cashflow
+            # TODO, perhaps the time series of "capital" should be 1 item per timestamps, and not 1 item per trade
             self.capitalts.append(self.capital)
             # if we opened a new position, check if we already have a position like that, and add
             # if we closed a position, find the position and remove it
@@ -543,6 +547,7 @@ class Account():
             else:
                 raise Exception('It makes no sense to end up here!')
 
+        # TODO, why am I returning the capital? I should not need to return the capital, since it is a property
         return self.capital
         
 

@@ -28,17 +28,18 @@ class MyStrategy(obt.abstractstrategy.Strategy):
         self.stockpositions = []
         self.deltavalues = []
         self.strategy = strategydataframe
+        self.verbose = 1
 
     def estimatestrategy(self, marketfeedback, accountfeedback):
         super().estimatestrategy(marketfeedback, accountfeedback)
 
 
         currentoptionpositions = self.account.positions.getoptionpositions(self.marketdata.tickernames[0])
-
+        current_date = self.marketdata.currentdatetime
+        current_date = current_date.strftime('%Y-%m-%d')
         strategy_today: pd.DataFrame
         if not currentoptionpositions:
-            current_date = self.marketdata.currentdatetime
-            current_date = current_date.strftime('%Y-%m-%d')
+            
             strategy_today = self.strategy[self.strategy['datetime'] == current_date]
 
             if strategy_today['signal'].values[0] in [1, -1]:
@@ -62,28 +63,39 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                 # Get the put
                 put = ATM_options[ATM_options['pcflag'] == 0]
                 
+                if self.verbose:
+                    print(f"Spot: {spot}")
+                    print(f"ATM_strike: {ATM_strike}")
+                    print(f"Expiration Date: {call['expirationdate'].values[0]}")
+
                 # now for the wings, we filter out bid<0.01
                 liquidoptions = optionsnapshot.loc[optionsnapshot['bid']>0.00]
-                liquidoptions = liquidoptions.loc[liquidoptions['dte']>6]
+                liquidoptions = liquidoptions.loc[liquidoptions['dte']>7]
                 # now keep only those with 'dte' with the smallest value, and keep them all with smallest value of dte
                 liquidoptions = liquidoptions[liquidoptions['dte'] == liquidoptions['dte'].min()]
                 # keep only those with 'OI' > 0
                 liquidoptions = liquidoptions[liquidoptions['openinterest'] > 0]
                 # keep only those with 'volume > 0
                 liquidoptions = liquidoptions[liquidoptions['volume'] > 0]
-                wingcalls = liquidoptions[liquidoptions['pcflag'] == 1]
-                wingputs = liquidoptions[liquidoptions['pcflag'] == 0]
+                wingcalls = liquidoptions[liquidoptions['pcflag'] == 1].copy()
+                wingcalls.loc[:,'otmk'] = wingcalls['k'] - ATM_strike
+                wingputs = liquidoptions[liquidoptions['pcflag'] == 0].copy()
+                wingputs.loc[:,'otmk'] = ATM_strike - wingputs['k']
                 # now, wingouts and wingcalls have a 'k_diff'.
                 # I want to know what is the largest k_diff that is in both wingcalls and wingputs
-                common_k_diff = np.intersect1d(wingcalls['k_diff'], wingputs['k_diff'])
+                common_k_diff = np.intersect1d(wingcalls['otmk'], wingputs['otmk'])
                 if len(common_k_diff) > 0:
                     largest_common_k_diff = common_k_diff.max()
-                    wingcall = wingcalls[wingcalls['k_diff'] == largest_common_k_diff].iloc[0]
-                    wingput = wingputs[wingputs['k_diff'] == largest_common_k_diff].iloc[0]
+                    wingcall = wingcalls[wingcalls['otmk'] == largest_common_k_diff]
+                    wingput = wingputs[wingputs['otmk'] == largest_common_k_diff]
                 else:
-                    wingcall = wingcalls.iloc[0]
-                    wingput = wingputs.iloc[0]
+                    wingcall = wingcalls.loc[0]
+                    wingput = wingputs.loc[0]
 
+                if self.verbose:
+                    print(f"Wing call strike: {wingcall['k'].values[0]}")
+                    print(f"Wing put strike: {wingput['k'].values[0]}")
+                    debugstop = 1
 
             if strategy_today['signal'].values[0] == 1:
                 # CREATE AN ORDER for the call
@@ -109,7 +121,7 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                 self.outgoingorders.append(order_call_wing)
                 self.outgoingorders.append(order_put__wing)                # we buy the butterfly
                 pausehere = 1
-                
+
             elif strategy_today['signal'].values[0] == -1:
                 # CREATE AN ORDER for the call
                 order_call_body = obt.Order(strategyid=self.myid, tickerindex = 0, ticker=call.iloc[0]['ticker'], assettype=obt.ASSET_TYPE_OPTION, symbol= call.iloc[0]['symbol'], 
@@ -136,6 +148,22 @@ class MyStrategy(obt.abstractstrategy.Strategy):
                 pausehere = 1
             else:
                 pass
+        else:
+            for eachposition in currentoptionpositions:
+                # dte = currentoptionpositions[eachposition]['expirationdate'] - current_date
+                dte = (pd.to_datetime(currentoptionpositions[eachposition]['expirationdate']) - pd.to_datetime(current_date)).days
+                if dte < 3:
+                    # generate an order to close the position. sell if long, buy if short
+                    if currentoptionpositions[eachposition]['quantity'] > 0:
+                        action = obt.SELL_TO_CLOSE
+                    else:
+                        action = obt.BUY_TO_CLOSE
+                    closingorder = obt.Order(strategyid=self.myid, tickerindex=0, ticker=self.marketdata.tickernames[0], assettype=obt.ASSET_TYPE_OPTION, 
+                                             symbol=eachposition, action=action, quantity=abs(currentoptionpositions[eachposition]['quantity']), 
+                                             ordertype=obt.ORDER_TYPE_MARKET, k=currentoptionpositions[eachposition]['k'], expirationdate=currentoptionpositions[eachposition]['expirationdate'])
+                    self.outgoingorders.append(closingorder)
+                pauseheretoo=1
+            whatistheposition = 1
 
         return self.outgoingorders
 
@@ -174,26 +202,26 @@ def main():
 
     ax1: axes._axes.Axes
     ax2: axes._axes.Axes
-    ax3: axes._axes.Axes
-    ax4: axes._axes.Axes
-    ax5: axes._axes.Axes
-    fig, (ax1,ax2,ax3,ax4,ax5) = plt.subplots(5,1, sharex=False, sharey=False)
+    # ax3: axes._axes.Axes
+    # ax4: axes._axes.Axes
+    # ax5: axes._axes.Axes
+    # fig, (ax1,ax2,ax3,ax4,ax5) = plt.subplots(5,1, sharex=False, sharey=False)
+    fig, (ax1,ax2) = plt.subplots(2,1, sharex=False, sharey=False)
     ax1.plot(uniquedaydates[-len(myaccount[0].totalvaluests):], myaccount[0].totalvaluests)
     ax1.yaxis.set_major_formatter('${x:1.2f}')
     ax1.set_title('Account value')
-    ax2.plot(uniquedaydates[-len(myaccount[0].totalvaluests):],stockdata.iloc[-len(myaccount[0].totalvaluests):]['close'],label='close')
-    ax2.yaxis.set_major_formatter('${x:1.2f}')
+    ax2.plot(uniquedaydates[-len(strategy_data):], strategy_data.signal)
     ax2.legend()
-    ax2.set_title('Stock Price')
-    ax3.plot(uniquedaydates[-len(mystrategy[0].stockpositions):], mystrategy[0].stockpositions)
-    ax3.set_title('Stock positions')
-    ax4.plot(uniquedaydates[-len(mystrategy[0].deltavalues):], mystrategy[0].deltavalues)
-    ax4.set_title('Delta values')
-    ax5.stem(mystrategy[0].buydates,1*np.ones(len(mystrategy[0].buydates),),linefmt='green')
-    ax5.stem(mystrategy[0].selldates,-1*np.ones(len(mystrategy[0].selldates),),linefmt='red')
-    ax5.set_title('Buy and sells of the put')
+    ax2.set_title('Signal')
+    # ax3.plot(uniquedaydates[-len(strategy_data):], strategy_data.signal)
+    # ax3.set_title('Stock positions')
+    # ax4.plot(uniquedaydates[-len(mystrategy[0].deltavalues):], mystrategy[0].deltavalues)
+    # ax4.set_title('Delta values')
+    # ax5.stem(mystrategy[0].buydates,1*np.ones(len(mystrategy[0].buydates),),linefmt='green')
+    # ax5.stem(mystrategy[0].selldates,-1*np.ones(len(mystrategy[0].selldates),),linefmt='red')
+    # ax5.set_title('Buy and sells of the put')
     fig.tight_layout()
-    fig.suptitle('Buy a put on Monday, Delta hedge it all week, close position on Friday')
+    fig.suptitle('Buy and Sell Iron Butterflys')
     plt.show()
 
 

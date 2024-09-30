@@ -1,0 +1,19 @@
+@startuml
+class Chronos {
+    primingthestrategyat()
+    _updatepositionvalues()
+    execute()
+        market
+    dealer
+    nbstrategies
+    accountlist
+    strategylist
+    chronology
+    startingtimestep
+    startingdatetime
+    totaltimesteps
+    startingtimestep
+    startingdatetime
+    __init__()
+}
+@enduml

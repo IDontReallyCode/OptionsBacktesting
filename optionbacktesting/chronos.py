@@ -65,7 +65,7 @@ class Chronos():
                     elif assettypes=='options':
                         for symbols in self.accountlist[index].positions.mypositions[tickers]['options']:
                             latestoptionsymbolrecord = self.market.__dict__[tickers].getoptionsymbolsnapshot(symbols)
-                            markprice = (latestoptionsymbolrecord.iloc[0]['bid'] + latestoptionsymbolrecord.iloc[0]['ask'])/2
+                            markprice = (round(latestoptionsymbolrecord.iloc[0]['bid'] + latestoptionsymbolrecord.iloc[0]['ask'],2))/2
                             totalpositionvalues += self.accountlist[index].positions.mypositions[tickers]['options'][symbols]['quantity']*markprice*100
 
             self.accountlist[index].positionvalues = totalpositionvalues
@@ -84,25 +84,25 @@ class Chronos():
             # 1. Tell the `Market` to move one step in time by passing the next `['datetime']`
             self.market.timepass(self.chronology['datetime'].iloc[timeindex])
 
-            tradelist = self.dealer.gothroughorders()
+            executedtradelist = self.dealer.gothroughorders()
 
-            if len(tradelist)>0:
+            if len(executedtradelist)>0:
                 check=1
 
             for index in range(self.nbstrategies):
                 # 2. Tell the `Dealer` execute orders.
                 # if tradelist[] is not None:
                 #     # 3. Tell the `Account` to update based on the `Trade`s 
-                if index in tradelist:
-                    accountfeedback = self.accountlist[index].update(tradelist[index])
+                if index in executedtradelist:
+                    accountfeedback = self.accountlist[index].update(executedtradelist[index])
                 else:
                     accountfeedback = []
-                    tradelist[index] = []
+                    executedtradelist[index] = []
                 # else:
                 #     # TODO Check what else we could need here
                     # accountfeedback = self.accountlist.capital
                 # 4. Tell the `Strategy` to update,    
-                strategyfeedback = self.strategylist[index].estimatestrategy(tradelist[index], accountfeedback)
+                strategyfeedback = self.strategylist[index].estimatestrategy(executedtradelist[index], accountfeedback)
                 
                 self.dealer.sendorder(strategyfeedback)
 
@@ -126,17 +126,19 @@ class Chronos():
                                                             quantity=-self.accountlist[index].positions.mypositions[tickers][assettypes]['quantity'], 
                                                             ordertype=ORDER_TYPE_MARKET))
                     elif assettypes=='option':
+                        debugstop=1
                         for symbols in self.accountlist[index].positions.mypositions[tickers]['options']:
                             latestoptionsymbolrecord = self.market.__dict__[tickers].getoptionsymbolsnapshot(symbols)
+
         
             if len(allclosingorders)>0:
                 self.dealer.sendorder(allclosingorders)
-                tradelist = self.dealer.gothroughorders()
-                if tradelist is not None:
-                    if index in tradelist:
-                        accountfeedback = self.accountlist[index].update(tradelist[index])
+                executedtradelist = self.dealer.gothroughorders()
+                if executedtradelist is not None:
+                    if index in executedtradelist:
+                        accountfeedback = self.accountlist[index].update(executedtradelist[index])
                     else:
                         accountfeedback = []
-                        tradelist[index] = []
+                        executedtradelist[index] = []
                 self._updatepositionvalues()
         
