@@ -33,15 +33,18 @@ Executing means:
 
 #### LOOP:
 [SOMETHING SEEMS OFF IN THE LOGIC HERE]
-1. Tell the `Market` to move one step in time by passing the next `['datetime']`
+1. Tell the `Market` to move one step in time by going to the next `['datetime']`
    - This way, when the `Strategy` (or any other object) accesses data, it can ask for all the data "up until, and including, that datetime", or, "the lastest data", which would be the latest snapshot for options, or the latest candle for stocks. 
 2. Tell the `Dealer` execute orders.
    - The `Dealer` has a list of waiting `Order`s.
    - The `Dealer` loops through all waiting orders and tries to execute them.
      - The `Dealer` will play the role of the clients' broker here and verify that the account can execute the order
-       - So, it will check that there is enough capital and  get the margin [TODO]
+       - So, it will check that there is enough capital and get the margin [TODO]
      - If an `Order` is executed, it is removed from the queue, and a `Trade` is created
      - If and `Order` is canceled because of lack of capital or margin, a feedback is sent to the strategy [TODO]
+   - The `Dealer` get's the list of option positions and checks for expired options. [TODO]
+     - OTM options are removed from the positions
+     - ITM options are executed immediately 
 3. Tell the `Account` to update based on the `Trade`s 
    - `Trade` should also include the Margin change.
    - The value of each position is updated and the total value in the account is updated.
@@ -140,16 +143,17 @@ When trading stock where the data is OHLC, we trade at Open (of following candle
 
 
 ## Margins
+THIS IS NO LONGER UP TO DATE SINCE TD is dead
+The margins would be based on Schwab reference web page: [https://www.schwab.com/margin/margin-rates-and-requirements](https://www.schwab.com/margin/margin-rates-and-requirements)
 
-The margins would be based on TD Ameritrade reference document: https://www.tdameritrade.com/retail-en_us/resources/pdf/AMTD086.pdf
 
-Margin calculations are quite tricky and dependent on multiple factors.
+~~Margin calculations are quite tricky and dependent on multiple factors.~~
 
-So here is what I settle for, for now:
-- Margin requirements will be calculated following the TDA guide above.
-  - For now, I will calculate each position independently.
-  - In the future, I could expand the code to allow trading spreads directly and calculate spread margins.
-- The user of the back testing framework is free to consider the margin or not.
+~~So here is what I settle for, for now:~~
+~~- Margin requirements will be calculated following the TDA guide above.~~
+~~- For now, I will calculate each position independently.~~
+~~- In the future, I could expand the code to allow trading spreads directly and calculate spread margins.~~
+~~- The user of the back testing framework is free to consider the margin or not.~~
 
 ~~However, for now, we take the following approach:~~
 ~~- Make a deposit in the `Account` when you initialize it at a level that "makes sense" based on the strategy you back test.~~
