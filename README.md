@@ -36,6 +36,9 @@ Executing means:
 1. Tell the `Market` to move one step in time by going to the next `['datetime']`
    - This way, when the `Strategy` (or any other object) accesses data, it can ask for all the data "up until, and including, that datetime", or, "the lastest data", which would be the latest snapshot for options, or the latest candle for stocks. 
 2. Tell the `Dealer` execute orders.
+   - `Chronos` checks for expiring options on that day and creates closing orders. 
+      - [TODO] #1 When using intraday data, the closing will occur at market open on last day of option. Perhaps I can do better.
+      - [TODO] #2 Need to verify whether the strategy alrady has closing orders to make sure I do not duplicate.
    - The `Dealer` has a list of waiting `Order`s.
    - The `Dealer` loops through all waiting orders and tries to execute them.
      - The `Dealer` will play the role of the clients' broker here and verify that the account can execute the order

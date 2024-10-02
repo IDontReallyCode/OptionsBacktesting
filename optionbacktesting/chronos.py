@@ -84,7 +84,12 @@ class Chronos():
             # 1. Tell the `Market` to move one step in time by passing the next `['datetime']`
             self.market.timepass(self.chronology['datetime'].iloc[timeindex])
 
+            # 2. Look for expiring options and generate orders to close OR execute them
+            self.checkforoptionsexpiration()
+
+            # 3. Tell the `Dealer` to execute orders from the waiting list.
             executedtradelist = self.dealer.gothroughorders()
+
 
             if len(executedtradelist)>0:
                 check=1
@@ -142,3 +147,33 @@ class Chronos():
                         executedtradelist[index] = []
                 self._updatepositionvalues()
         
+    
+    def checkforoptionsexpiration(self):
+        # loop to get option positions for each account
+        # loop to check if any of the options are expiring
+        # if they are, generate the orders to close them immediately
+
+        account: Account
+        for id, account in enumerate(self.accountlist):
+            allpositions = account.positions.getpositions()
+            if allpositions:
+                for ticker in allpositions:
+                    alloptionsforthisticker = allpositions[ticker]['options']
+                    if alloptionsforthisticker:
+                        current_date = self.market.currentdatetime
+                        # TODO Check this code if it makes sense...
+                        for eachoption in alloptionsforthisticker:
+                            expiration_date = alloptionsforthisticker[eachoption]['expirationdate']
+                            if pd.Timestamp(current_date) >= pd.Timestamp(expiration_date):
+                                quantity = alloptionsforthisticker[eachoption]['quantity']
+                                if quantity > 0:
+                                    order_action = SELL_TO_CLOSE
+                                else:
+                                    order_action = BUY_TO_CLOSE
+                                order = Order(id, tickerindex=0, ticker=ticker, assettype=ASSET_TYPE_OPTION, 
+                                              symbol=eachoption, action=order_action, quantity=-quantity, 
+                                              ordertype=ORDER_TYPE_MARKET, expirationdate=expiration_date, k=alloptionsforthisticker[eachoption]['k'])
+                                self.dealer.sendorder([order])
+                pausefordebug = 1
+            pass
+        pass
