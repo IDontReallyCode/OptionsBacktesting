@@ -91,7 +91,7 @@ Data should be sorted by datetime, pcflag, k, dte
 ### All DataFrame
 'datetime' column needs to be of datetime format
 
-Other columns can be there if you need them for strategy.
+Other columns can be added to the dataframe if you need them for a strategy.
 
 
 ## Extra Data
@@ -113,7 +113,7 @@ The only thing is that the user will be responsible for accessign only the data 
             - ticker: str           {Get it from Market.tickernames[tickerindex]}
             - asset type:           {ASSET_TYPE_STOCK = 0, ASSET_TYPE_OPTION = 1}
             - symbol: str           {the ticker for a stock, the unique symbol for an option}
-            - action:               {BUY_TO_OPEN = 1, SELL_TO_CLOSE = -1}
+            - action:               {BUY_TO_OPEN = 1, SELL_TO_CLOSE = -2, SELL_TO_OPEN = -1, BUY_TO_CLOSE = -2}
             - quantity: int 
             - ordertype:            {ORDER_TYPE_MARKET = 0, ORDER_TYPE_LIMIT = 1, ORDER_TYPE_STOP = 2}
             - tickerprice: float    {Required for margin calculation when shorting options}
@@ -172,11 +172,14 @@ The margins would be based on Schwab reference web page: [https://www.schwab.com
 ~~- If the end goal is to assess the performance of a strategy, perhaps it is better to give it a certain allocation, and see how the account value changes based on the strategy, and not bother too much with the margin requirements.~~
 ~~- Because of all this, I decide to put margin calculation aside for now.~~
 
+## multiple_accounts
+
+I had this idea to use multiple accounts, each with one strategy. The idea was NOT to allow multiple strategies to be executed at the same time, but rather to test multiple strategies at the same time in an efficient kind of way. Let me explain differently. If you want to test running multiple strategies at once, you should use 1 `Account` object, with 1 `Strategy` object. That `Strategy` object can be a complex combination of multiple trading strategies. Now, if you wanted to COMPARE 2 or more strategies, this is when you use 2 or more `Account` objects, each with 1 `Strategy` object attached. `Chronos` will run each `Strategy` object independently and at the end, you will be able to compare.
 
 
 # TODO
 - [ ] Category :: Priority :: Description
-- [ ] Dealer :: low :: Deal with exercise of options at maturity
+- [ ] Dealer :: low :: Deal with exercise of options at maturity (For now, a closing order is generated when dte==0)
 - [x] Account :: high :: estimate the margin on a short single option
 - [ ] Account :: med :: recognize the margin on known spreads, like verticals
 - [x] Account :: med :: update the capital and the position values at each time steps to be able to assess the strategy standard deviation.
@@ -184,6 +187,11 @@ The margins would be based on Schwab reference web page: [https://www.schwab.com
 - [ ] Dealer :: med :: Provide feedback on canceled orders
 - [ ] Dealer :: med :: Provide flexibility on how trades are executed (bid-ask and OHLC) Done for options
 - [ ] Account :: med :: Look at how the marked price is determined.
-- [ ] Chronos :: high :: make strategies and matching accounts in lists so we can treat multiple strategies at once
+- [x] Chronos :: high :: make strategies and matching accounts in lists so we can treat multiple strategies at once
 - [ ] Strategy :: low :: Provide some basic strategies that the user can add automatically, like buy-and-hold for ticker [0]
 - [ ] Account :: med :: automate the tracking of ticker positions
+- [ ] Check into: https://nautilustrader.io/ in case I could save time and just use that
+
+
+
+
