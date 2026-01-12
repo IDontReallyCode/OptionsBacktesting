@@ -2,9 +2,10 @@
 
 ## 1. System Overview
 This repository implements an **Event-Driven Architecture** designed specifically for the complexities of US Equity Options. Unlike simple stock backtesters, this system explicitly handles:
+* **Heterogeneous Data Sources:** A flexible `loader` layer that standardizes data from different providers (CBOE, OptionMetrics, etc.) into a unified internal format.
 * **Non-Linear Payoffs:** Dedicated `OptionPosition` classes for tracking Greeks and PnL.
 * **Contract Lifecycles:** Automated handling of Expiration, Assignment, and Exercise via an `OptionExchange` component.
-* **Data Volume:** Iterator-based data loading to handle massive option chain CSVs without memory overflows.
+* **Data Volume:** Iterator-based data loading via Memory-Mapped Arrow files to handle massive option chain CSVs without RAM overflows.
 
 ### High-Level Data Flow
 The system follows a cyclic event loop orchestrated by the `BacktestEngine`.
@@ -27,17 +28,19 @@ graph TD
 ## 2. Core Components
 
 ### A. The Data Layer (`src/data`)
-*Responsible for efficiently feeding market data to the system.*
+*Responsible for normalizing raw files and efficiently feeding market data.*
 
-#### `DataHandler` (Abstract Base Class)
-* **Role:** The single source of truth for market prices.
-* **Key Feature:** Uses Python **Generators** (`yield`) to load data chunk-by-chunk, avoiding the $O(N)$ filtering cost of loading 5 years of option chains into memory.
-* **Subclasses:**
-    * `HistoricCSVDataHandler`: Reads formatted CSVs from disk.
-    * `LiveApiDataHandler` (Future): Connects to IBKR/TDA APIs.
+#### 1. `DataLoader` (The Gatekeeper)
+* **Role:** Handles I/O and Standardization. It converts "Messy" raw CSVs into "Clean" Arrow Cache files.
+* **Key Component:** `DataSourceConfig`. A configuration object that maps external column names (e.g., `CPFLAG`, `call_put`) to the internal standard (`option_type`) and normalizes values (e.g., `False` -> `"P"`).
+* **Output:** Creates standardized `.arrow` (IPC) files that are sorted and typed, ready for high-speed reading.
+
+#### 2. `DataHandler` (The Server)
+* **Role:** The single source of truth for market prices during the simulation.
+* **Mechanism:** Uses **Polars Lazy Execution** and **Memory Mapping** to read the `.arrow` files created by the Loader.
 * **Key Methods:**
-    * `get_latest_bar(symbol)`: Returns the most recent OHLC/Bid-Ask.
-    * `get_option_chain(symbol, expiry)`: Returns the specific slice of the chain for the current timestamp.
+    * `update_bars()`: Pushes the internal clock forward one tick.
+    * `get_latest_bar(symbol)`: Returns the stock price or full option chain for the current timestamp.
 
 ---
 
@@ -105,18 +108,20 @@ graph TD
 
 ```text
 project_root/
-├── data/                   # CSV files
+├── data/                   # Raw CSV files
 ├── src/
 │   ├── __init__.py
-│   ├── engine.py           # The Event Loop (formerly Chronos)
+│   ├── engine.py           # The Event Loop
 │   ├── events.py           # Event Class Definitions (Market, Signal, Order, Fill)
 │   ├── data/
-│   │   ├── handler.py
-│   │   └── loader.py
+│   │   ├── __init__.py
+│   │   ├── handler.py      # Iterates/Serves data to the engine
+│   │   └── loader.py       # Standardizes CSVs -> Arrow Cache
 │   ├── strategy/
 │   │   ├── base.py
 │   │   └── moving_average.py
 │   ├── portfolio/
+│   │   ├── __init__.py
 │   │   ├── portfolio.py
 │   │   ├── position.py     # Contains OptionPosition class
 │   │   └── risk.py
