@@ -6,7 +6,6 @@ Responsibility:
     - Monitor option lifecycles.
     - Auto-Exercise ITM options at expiration.
     - Expire OTM options worthless.
-    - Generate resulting Fills for the Portfolio.
 """
 
 from src.events import FillEvent
@@ -19,7 +18,7 @@ class OptionExchange:
 
     def check_expiration(self, portfolio) -> List[FillEvent]:
         """
-        scans the portfolio for options that expire TODAY.
+        Scans the portfolio for options that expire TODAY.
         """
         current_dt = self.data_handler.get_current_time()
         if not current_dt:
@@ -28,29 +27,21 @@ class OptionExchange:
         current_date = current_dt.date()
         generated_fills = []
 
-        # We iterate over a copy of items because we might modify the portfolio later
-        # (Though here we just return fills, the portfolio handles the modification)
         for symbol, position in portfolio.positions.items():
             
             # 1. Skip if not an Option or not Expiring Today
             if not hasattr(position, "expiry") or position.expiry is None:
                 continue
                 
-            # Check if expired (or passed expiration)
             if current_date >= position.expiry:
                 
-                # 2. Determine Settlement Price (Underlying Price)
-                # We need the price of the UNDERLYING, not the option.
-                # Usually derived from symbol (e.g. "SPY" from "SPY_230120C...")
-                # For this simple version, we assume the data_handler has the underlying loaded.
-                
+                # 2. Determine Settlement Price
                 # Hack: Assume underlying symbol is the first part "SPY" of "SPY_OPT"
-                # In production, position would store `underlying_symbol`
                 underlying_sym = symbol.split("_")[0] 
                 price_slice = self.data_handler.get_latest_bar(underlying_sym)
                 
                 if price_slice is None or price_slice.is_empty():
-                    print(f"[Exchange] Cannot settle {symbol}: No underlying data for {underlying_sym}")
+                    print(f"[Exchange] Cannot settle {symbol}: No data for {underlying_sym}")
                     continue
                     
                 settlement_price = price_slice["underlying_price"][0]
@@ -70,25 +61,18 @@ class OptionExchange:
         return generated_fills
 
     def _expire_position(self, position, dt) -> List[FillEvent]:
-        """
-        Option expires worthless. 
-        Action: Sell the option at $0.00 to close the position.
-        """
+        """Option expires worthless -> Sell @ 0.0"""
         return [FillEvent(
             datetime=dt,
             symbol=position.symbol,
-            quantity=-position.quantity, # Flatten position
+            quantity=-position.quantity,
             fill_price=0.0,
             commission=0.0,
             meta={"type": "EXPIRATION"}
         )]
 
     def _exercise_position(self, position, settlement_price, dt) -> List[FillEvent]:
-        """
-        Option Exercised.
-        Action 1: Close Option (Sell @ 0).
-        Action 2: Open Underlying (Buy Stock @ Strike).
-        """
+        """Option Exercised -> Close Option, Open Stock."""
         # 1. Close the Option
         close_opt = FillEvent(
             datetime=dt,
@@ -100,15 +84,13 @@ class OptionExchange:
         )
         
         # 2. Exchange Stocks
-        # If Long Call: Buy Stock. If Long Put: Sell Stock.
-        # Quantity = Option Qty * Multiplier (100)
         stock_qty = position.quantity * position.multiplier
         if position.option_type == "P":
             stock_qty = -stock_qty
             
         open_stock = FillEvent(
             datetime=dt,
-            symbol=position.symbol.split("_")[0], # e.g. "SPY"
+            symbol=position.symbol.split("_")[0],
             quantity=stock_qty,
             fill_price=position.strike,
             commission=0.0,

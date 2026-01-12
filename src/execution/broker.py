@@ -1,17 +1,17 @@
 """
-Execution Handler Module
-========================
+Broker Module
+=============
 
 Responsibility:
     - Simulate the Execution of orders.
-    - Model Slippage and Spread costs.
+    - Model Slippage (Bid/Ask spread).
     - Calculate Commissions.
 """
 
 from src.events import OrderEvent, FillEvent
-from typing import List, Optional
+from typing import Optional
 
-class ExecutionHandler:
+class Broker:
     def __init__(self, data_handler):
         self.data_handler = data_handler
 
@@ -20,11 +20,10 @@ class ExecutionHandler:
         Converts an Order into a Fill based on current market data.
         """
         # 1. Get Live Price
-        # In a real engine, we might check if volume > 0, etc.
         price_slice = self.data_handler.get_latest_bar(order.symbol)
         
         if price_slice is None or price_slice.is_empty():
-            print(f"[Exec] No data for {order.symbol}. Order Ignored.")
+            print(f"[Broker] No data for {order.symbol}. Order Ignored.")
             return None
 
         # 2. Calculate Fill Price (Simulation Logic)
@@ -47,10 +46,7 @@ class ExecutionHandler:
         """
         Determines the price. 
         Pessimistic: Buy at Ask, Sell at Bid.
-        Optimistic: Midpoint.
         """
-        # Basic "Midpoint" Fill for now
-        # If we have Bid/Ask, use them based on direction
         cols = df.columns
         if "bid" in cols and "ask" in cols:
             bid = df["bid"][0]
@@ -60,7 +56,7 @@ class ExecutionHandler:
             else:
                 return bid  # Selling? Take the Bid.
                 
-        # Fallback to whatever price we have
+        # Fallback
         if "mid" in cols: return df["mid"][0]
         if "underlying_price" in cols: return df["underlying_price"][0]
         
