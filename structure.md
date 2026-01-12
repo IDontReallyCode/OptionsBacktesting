@@ -126,7 +126,7 @@ project_root/
 │   │   ├── position.py     # Contains OptionPosition class
 │   │   └── risk.py
 │   └── execution/
-│       ├── handler.py
+│       ├── broker.py
 │       └── exchange.py     # Expiration logic
 ├── tests/                  # Pytest suite
 ├── config.yaml             # Backtest parameters
