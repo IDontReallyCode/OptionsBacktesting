@@ -1,94 +1,73 @@
 import pytest
 import polars as pl
-import os
-from src.data.handler import HistoricPolarsDataHandler
+from datetime import datetime, timedelta
+from src.data.handler import DataHandler
 
-# --- 1. The Setup (Fixture) ---
 @pytest.fixture
-def mock_csv_data(tmp_path):
+def mock_arrow_files(tmp_path):
     """
-    Creates a tiny temporary CSV file for testing.
-    Returns the path to that file.
+    Creates two temporary .arrow files with overlapping timelines.
+    Stock: T1, T2, T3
+    Option: T2, T3, T4
+    Expected Union: T1, T2, T3, T4
     """
-    # Create a dummy dataframe with 3 timestamps
-    df = pl.DataFrame({
-        "datetime": [
-            "2023-01-01 09:30:00", 
-            "2023-01-01 09:31:00", 
-            "2023-01-02 09:30:00"
-        ],
+    base_time = datetime(2023, 1, 1, 9, 30)
+    times = [base_time + timedelta(minutes=i) for i in range(5)]
+    
+    # 1. Stock Data (Times 0, 1, 2)
+    df_stock = pl.DataFrame({
+        "datetime": [times[0], times[1], times[2]],
         "symbol": ["SPY", "SPY", "SPY"],
-        "price": [100.0, 100.5, 101.0]
+        "price": [100.0, 101.0, 102.0]
     })
+    path_stock = tmp_path / "spy_stock.arrow"
+    df_stock.write_ipc(path_stock)
     
-    # Save it to a temp folder managed by pytest
-    file_path = tmp_path / "test_spy.csv"
-    df.write_csv(file_path)
+    # 2. Option Data (Times 1, 2, 3) - Overlaps at T1, T2; Unique at T3
+    df_opt = pl.DataFrame({
+        "datetime": [times[1], times[2], times[3]],
+        "symbol": ["SPY_OPT", "SPY_OPT", "SPY_OPT"],
+        "strike": [100, 100, 100]
+    })
+    path_opt = tmp_path / "spy_opt.arrow"
+    df_opt.write_ipc(path_opt)
     
-    return str(file_path)
+    return {
+        "SPY": str(path_stock),
+        "SPY_OPT": str(path_opt)
+    }, times
 
-# --- 2. The Unit Tests ---
-
-def test_loading_and_caching(mock_csv_data):
-    """
-    Does it load the CSV and create the .arrow cache file?
-    """
-    config = {"SPY": mock_csv_data}
+def test_handler_synchronization(mock_arrow_files):
+    file_map, times = mock_arrow_files
+    handler = DataHandler(file_map)
     
-    # Initialize Handler
-    handler = HistoricPolarsDataHandler(config)
+    # 1. Check Timeline Construction
+    # Should have 4 unique steps: T0, T1, T2, T3
+    assert len(handler.timeline) == 4
+    assert handler.timeline[0] == times[0]
+    assert handler.timeline[-1] == times[3]
     
-    # 1. Check if data loaded into memory
-    assert "SPY" in handler.data_store
-    assert handler.data_store["SPY"].height == 3
+    # 2. Step 1: T0 (Only Stock)
+    assert handler.update_bars() is True
+    assert handler.get_current_time() == times[0]
+    assert handler.get_latest_bar("SPY") is not None
+    assert handler.get_latest_bar("SPY_OPT") is None # Options didn't trade yet
     
-    # 2. Check if the .arrow file was created (The caching logic)
-    expected_arrow_path = mock_csv_data.replace(".csv", ".arrow")
-    assert os.path.exists(expected_arrow_path)
-
-def test_iteration_logic(mock_csv_data):
-    """
-    Does update_bars() correctly step through time?
-    """
-    config = {"SPY": mock_csv_data}
-    handler = HistoricPolarsDataHandler(config)
+    # 3. Step 2: T1 (Both)
+    assert handler.update_bars() is True
+    assert handler.get_current_time() == times[1]
+    assert handler.get_latest_bar("SPY")["price"][0] == 101.0
+    assert handler.get_latest_bar("SPY_OPT") is not None
     
-    # Step 1: 09:30:00
-    has_data = handler.update_bars()
-    assert has_data is True
-    assert "09:30:00" in str(handler.get_current_time())
+    # 4. Step 3: T2 (Both)
+    assert handler.update_bars() is True
     
-    # Step 2: 09:31:00
-    handler.update_bars()
-    assert "09:31:00" in str(handler.get_current_time())
+    # 5. Step 4: T3 (Only Option)
+    assert handler.update_bars() is True
+    assert handler.get_current_time() == times[3]
+    assert handler.get_latest_bar("SPY") is None # Stock stopped trading
+    assert handler.get_latest_bar("SPY_OPT") is not None
     
-    # Step 3: Next Day
-    handler.update_bars()
-    assert "02 09:30:00" in str(handler.get_current_time())
-    
-    # Step 4: End of Data
-    has_more = handler.update_bars()
-    assert has_more is False # Should be False because we ran out of rows
+    # 6. End of Data
+    assert handler.update_bars() is False
     assert handler.continue_backtest is False
-
-def test_get_latest_bar(mock_csv_data):
-    """
-    Does get_latest_bar return the correct slice?
-    """
-    config = {"SPY": mock_csv_data}
-    handler = HistoricPolarsDataHandler(config)
-    
-    handler.update_bars() # Move to first tick
-    
-    bar = handler.get_latest_bar("SPY")
-    
-    # In our mock data, first price is 100.0
-    # Polars returns a dataframe, so we extract the value
-    # Option A: Get the column as a Series first (Recommended)
-    price = bar["price"].item(0)
-
-    # OR
-
-    # # Option B: Use 2D coordinates on the DataFrame
-    # price = bar.select("price").item(0, 0)
-    assert price == 100.0

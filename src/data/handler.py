@@ -1,163 +1,119 @@
 """
 Data Handler Module
-This module defines the DataHandler abstract base class and a concrete implementation
-that uses Polars for efficient data loading and handling.
+===================
 
-Created: By Google Gemini AI
-Edite by: Pascal Letourneau
+Responsibility:
+    1. Load standardized .arrow files (created by loader.py).
+    2. Synchronize timelines across multiple assets (Union of all timestamps).
+    3. Serve data step-by-step (Bar-by-Bar) to the Backtest Engine.
+
+Key Features:
+    - Memory Mapping: Reads Arrow files instantly without copying to RAM.
+    - Universal Timeline: Handles asynchronous data (e.g., Ticker A trades at 10:01, Ticker B at 10:02).
+    - Lookahead Bias Prevention: Only serves data for the current timestamp.
 """
 
-import os
-from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Generator, Optional, Dict, Tuple, Union
-
 import polars as pl
+from pathlib import Path
+from typing import Dict, List, Optional, Union
+from datetime import datetime
 
-# Define types for clarity
-Symbol = str
-MarketDataSlice = Dict[Symbol, pl.DataFrame]
-
-class DataHandler(ABC):
-    """
-    Abstract Base Class for Data Handling.
-    Enforces the contract that the BacktestEngine expects.
-    """
-
-    @abstractmethod
-    def update_bars(self) -> bool:
-        """
-        Pushes the internal timeframe forward by one step.
-        Returns: True if new data was found, False if End of Data.
-        """
-        pass
-
-    @abstractmethod
-    def get_latest_bar(self, symbol: str) -> Optional[pl.DataFrame]:
-        """
-        Returns the data slice for the current timestamp for a specific symbol.
-        """
-        pass
-
-    @abstractmethod
-    def get_current_time(self):
-        """Returns the current timestamp of the system."""
-        pass
-
-
-class HistoricPolarsDataHandler(DataHandler):
-    """
-    Loads historic Option and Stock data using Polars.
-    
-    Features:
-    - Auto-Caching: Converts CSV -> Arrow IPC (.arrow) on first run for 50x faster loading subsequently.
-    - Lazy Iteration: Yields data slices based on timestamps without re-filtering the whole dataset repeatedly.
-    """
-
-    def __init__(self, file_config: Dict[Symbol, str]):
+class DataHandler:
+    def __init__(self, file_map: Dict[str, str]):
         """
         Args:
-            file_config: Dictionary mapping Symbol -> FilePath
-                         e.g., {'SPY': './data/SPY_2023.csv', 'SPY_OPT': './data/SPY_OPT_2023.csv'}
+            file_map: Dictionary mapping symbol -> path to .arrow file.
+                      e.g. {"SPY": "data/spy.arrow", "SPY_OPT": "data/spy_opt.arrow"}
         """
-        self.file_config = file_config
-        self.data_store: Dict[Symbol, pl.DataFrame] = {}
-        self.generators: Dict[Symbol, Generator] = {}
+        self.file_map = file_map
+        self.data_store: Dict[str, pl.DataFrame] = {}
+        self.timeline: List[datetime] = []
         
-        # Current state
-        self.current_data: MarketDataSlice = {}
-        self.current_time = None
-        self.continue_backtest = True
+        # Iteration State
+        self.time_idx: int = 0
+        self.current_time: Optional[datetime] = None
+        self.current_data_slice: Dict[str, pl.DataFrame] = {}
+        self.continue_backtest: bool = True
 
-        # Load and Cache Data immediately upon instantiation
-        self._load_and_cache_data()
+        self._load_all_data()
+        self._build_timeline()
+
+    def _load_all_data(self):
+        """Loads all arrow files into memory-mapped DataFrames."""
+        for symbol, path in self.file_map.items():
+            p = Path(path)
+            if not p.exists():
+                raise FileNotFoundError(f"Data file not found for {symbol}: {path}")
+            
+            # memory_map=True is crucial for performance on large files
+            try:
+                self.data_store[symbol] = pl.read_ipc(p, memory_map=True)
+            except Exception as e:
+                raise RuntimeError(f"Failed to load {symbol} from {path}: {e}")
+
+    def _build_timeline(self):
+        """
+        Creates a master timeline by finding the UNION of all timestamps 
+        across all loaded symbols.
+        """
+        if not self.data_store:
+            self.timeline = []
+            return
+
+        # 1. Collect unique timestamps from every symbol
+        all_timestamps = set()
+        for df in self.data_store.values():
+            if "datetime" not in df.columns:
+                continue
+            
+            # We use unique() to avoid duplicates within one file
+            ts = df["datetime"].unique().to_list()
+            all_timestamps.update(ts)
+
+        # 2. Sort them to create a linear time axis
+        self.timeline = sorted(list(all_timestamps))
         
-        # Initialize Generators
-        self._init_generators()
-
-    def _load_and_cache_data(self):
-        """Internal method to handle CSV -> IPC conversion."""
-        print(f"[{self.__class__.__name__}] Initializing Data...")
-
-        for symbol, raw_path in self.file_config.items():
-            path_obj = Path(raw_path)
-            # Define the cache path (e.g., data.csv -> data.arrow)
-            ipc_path = path_obj.with_suffix(".arrow")
-
-            if ipc_path.exists():
-                print(f"Loading cached IPC for {symbol}...")
-                # Memory Map (mmap) allows loading huge files without filling RAM instantly
-                df = pl.read_ipc(ipc_path, memory_map=True)
-            else:
-                print(f"Parsing CSV for {symbol} (One-time process)...")
-                # Parse CSV
-                try:
-                    df = pl.read_csv(
-                        path_obj, 
-                        try_parse_dates=True, # Auto-detect datetime format
-                        ignore_errors=True    # Skip malformed lines
-                    )
-                    
-                    # Sort is CRITICAL for chronological replay
-                    if "datetime" in df.columns:
-                        df = df.sort("datetime")
-                    
-                    # Save to IPC for next time
-                    print(f"Caching data to {ipc_path}...")
-                    df.write_ipc(ipc_path)
-                    
-                except Exception as e:
-                    raise IOError(f"Failed to load data for {symbol}: {e}")
-
-            self.data_store[symbol] = df
-
-    def _init_generators(self):
-        """Creates Python Generators for efficient looping."""
-        # We need a master timeline. 
-        # Strategy: We assume the first symbol in config provides the 'Master Clock' (usually the Underlying)
-        # Or we can merge all timestamps. For simplicity, we define the first symbol as the clock source.
-        
-        master_symbol = list(self.file_config.keys())[0]
-        master_df = self.data_store[master_symbol]
-        
-        # Get unique timestamps to step through
-        self.timeline = master_df["datetime"].unique(maintain_order=True).to_list()
-        self.time_idx = 0
+        if not self.timeline:
+            print("Warning: No timestamps found in loaded data.")
+            self.continue_backtest = False
 
     def update_bars(self) -> bool:
         """
-        The Heartbeat. Moves the pointer to the next timestamp.
+        Advances the 'Clock' to the next timestamp.
+        Returns False if end of data is reached.
         """
         if self.time_idx >= len(self.timeline):
             self.continue_backtest = False
             return False
 
-        # 1. Get current time target
-        timestamp = self.timeline[self.time_idx]
-        self.current_time = timestamp
-
-        # 2. Slice data for ALL symbols at this timestamp
-        # Polars filter is fast, but for massive option chains, we rely on the pre-sorted nature.
-        # Note: Ideally, this uses `partition_by` or `group_by` in a pre-processing step for max speed,
-        # but simple filtering is sufficient for mid-sized data.
+        # 1. Update Time
+        self.current_time = self.timeline[self.time_idx]
         
+        # 2. Clear previous slice
+        self.current_data_slice = {}
+
+        # 3. Update 'Current Data' for this specific moment
+        # Note: This is a filter operation. For massive datasets, we might optimize 
+        # this with iterators later, but Polars filter is fast enough for now.
         for symbol, df in self.data_store.items():
-            # Get data for exactly this timestamp
-            # We use 'filter' here. 
-            daily_slice = df.filter(pl.col("datetime") == timestamp)
+            # Check if this symbol has data at this specific time
+            # We presume the data is sorted.
             
-            if not daily_slice.is_empty():
-                self.current_data[symbol] = daily_slice
+            # Fast filter: Get rows where datetime matches current clock
+            slice_df = df.filter(pl.col("datetime") == self.current_time)
+            
+            if not slice_df.is_empty():
+                self.current_data_slice[symbol] = slice_df
 
         self.time_idx += 1
         return True
 
     def get_latest_bar(self, symbol: str) -> Optional[pl.DataFrame]:
         """
-        Returns the Polars DataFrame slice for the specific symbol at current time.
-        For Options, this returns the WHOLE chain for that minute/day.
+        Returns the dataframe slice for the given symbol at the CURRENT time.
+        Returns None if the symbol has no data for this specific timestamp.
         """
-        return self.current_data.get(symbol)
-
-    def get_current_time(self):
+        return self.current_data_slice.get(symbol)
+    
+    def get_current_time(self) -> Optional[datetime]:
         return self.current_time
