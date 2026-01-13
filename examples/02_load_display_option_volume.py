@@ -5,11 +5,8 @@ PURPOSE:
     This script demonstrates how to:
     1. Load "Messy" Option Data (handling headers like 'pcflag', 'k').
     2. Apply Value Mapping (converting 1 -> 'C', 0 -> 'P').
-    3. Aggregate data (Summing Total Volume per Day).
-    4. Visualize the resulting time series.
-
-    It serves as a test for the 'val_map' feature of the loader and 
-    Polars aggregation syntax.
+    3. Aggregate data (Summing Call vs Put Volume per Day).
+    4. Visualize the resulting time series on a single chart.
 
 USAGE:
     $ python examples/02_load_display_option_volume.py
@@ -22,7 +19,6 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 # --- PATH SETUP ---
-# Ensures we can import 'src' even if running from the 'examples/' folder
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
@@ -38,22 +34,14 @@ except ImportError as e:
 # 1. USER CONFIGURATION
 # =============================================================================
 
-# [INSTRUCTION]: Path to your raw Option CSV.
 RAW_SOURCE_PATH = os.path.join(project_root, "data", "SAMPLEdailyoption.csv")
-
-# [INSTRUCTION]: Output folder for the processed Arrow file.
 PROCESSED_DIR = os.path.join(project_root, "data", "processed")
-
-# [INSTRUCTION]: Ticker Symbol (Used for file naming).
 TICKER_SYMBOL = "SAMPLE_OPT"
 
-# [INSTRUCTION]: COLUMN MAPPING
-# Map your CSV headers (Left) to the Internal Standard (Right).
-# Internal Standard: 'datetime', 'symbol', 'strike', 'expiry', 'option_type', 'volume', 'open_interest'
 COLUMN_MAPPING = {
     "date_eod": "datetime",
     "ticker":   "symbol",
-    "pcflag":   "option_type",  # We will map values for this later (1->C, 0->P)
+    "pcflag":   "option_type", 
     "k":        "strike",
     "date_mat": "expiry",
     "volume":   "volume",
@@ -62,14 +50,11 @@ COLUMN_MAPPING = {
     "ask":      "ask"
 }
 
-# [INSTRUCTION]: VALUE MAPPING
-# Map specific values inside a column. 
-# Here we convert the integer flag to a standard string char.
-# NOTE: The loader converts the column to String before mapping, so keys must be strings ("1", not 1).
+# NOTE: Loader converts columns to String before mapping keys.
 VALUE_MAPPING = {
     "option_type": {
-        "1": "C",  # Assuming 1 = Call
-        "0": "P"   # Assuming 0 = Put
+        "1": "C", 
+        "0": "P"
     }
 }
 
@@ -78,17 +63,12 @@ VALUE_MAPPING = {
 # =============================================================================
 
 def get_option_data():
-    """
-    Loads option data using the robust loader, handling caching automatically.
-    """
-    # 1. Create Config
     config = DataSourceConfig(
         name="OptionLoader",
         col_map=COLUMN_MAPPING,
-        val_map=VALUE_MAPPING  # <--- Passing the value map here
+        val_map=VALUE_MAPPING
     )
 
-    # 2. Load
     try:
         df, metadata = load_and_standardize(
             symbol=TICKER_SYMBOL, 
@@ -106,57 +86,60 @@ def get_option_data():
     return df
 
 # =============================================================================
-# 3. AGGREGATION LOGIC
+# 3. AGGREGATION LOGIC (UPDATED)
 # =============================================================================
 
 def calculate_daily_volume(df):
     """
-    Aggregates the detailed option chain to find Total Volume per Day.
+    Separates Call and Put volume and aggregates them by date.
     """
-    print("\n[INFO] Aggregating Volume by Date...")
+    print("\n[INFO] Aggregating Volume (Calls vs Puts)...")
     
-    # Check if we have the required columns
-    if "datetime" not in df.columns or "volume" not in df.columns:
-        print("[ERROR] Cannot calculate volume. Missing 'datetime' or 'volume' columns.")
+    if "datetime" not in df.columns or "volume" not in df.columns or "option_type" not in df.columns:
+        print("[ERROR] Missing required columns ('datetime', 'volume', 'option_type').")
         return None
 
     # Polars Aggregation:
-    # 1. Group By Date
-    # 2. Sum the Volume column
-    # 3. Sort by Date
+    # We use 'when-then-otherwise' inside the aggregation to pivot the data
     daily_vol = (
         df.group_by("datetime")
-        .agg(pl.col("volume").sum().alias("total_volume"))
+        .agg([
+            pl.col("volume").filter(pl.col("option_type") == "C").sum().alias("call_vol"),
+            pl.col("volume").filter(pl.col("option_type") == "P").sum().alias("put_vol"),
+            pl.col("volume").sum().alias("total_vol") # Optional total
+        ])
         .sort("datetime")
     )
     
     return daily_vol
 
 # =============================================================================
-# 4. VISUALIZATION LOGIC
+# 4. VISUALIZATION LOGIC (UPDATED)
 # =============================================================================
 
 def plot_volume(df_agg):
     """
-    Plots the Total Daily Volume.
+    Plots Call Volume and Put Volume on the same chart.
     """
     print("[INFO] Preparing Plot...")
     
-    # Convert to Pandas for Matplotlib
     pdf = df_agg.to_pandas()
     
     fig, ax = plt.subplots(figsize=(12, 6))
     
-    # Bar chart usually looks better for Volume, but Line is fine too.
-    # We'll use a filled area chart (plot + fill_between) for a pro look.
-    ax.plot(pdf["datetime"], pdf["total_volume"], color='#1f77b4', linewidth=1.5, label='Total Option Volume')
-    ax.fill_between(pdf["datetime"], pdf["total_volume"], color='#1f77b4', alpha=0.3)
+    # Plot Calls (Green)
+    ax.plot(pdf["datetime"], pdf["call_vol"], 
+            color='green', linewidth=1.5, label='Call Volume')
+    
+    # Plot Puts (Red)
+    ax.plot(pdf["datetime"], pdf["put_vol"], 
+            color='red', linewidth=1.5, label='Put Volume')
     
     # Formatting
-    ax.set_title(f"{TICKER_SYMBOL} - Total Daily Option Volume")
+    ax.set_title(f"{TICKER_SYMBOL} - Daily Call vs Put Volume")
     ax.set_ylabel("Volume (Contracts)")
     ax.set_xlabel("Date")
-    ax.legend()
+    ax.legend() # Shows the labels defined in ax.plot
     ax.grid(True, alpha=0.3)
 
     # Date Axis Formatting
@@ -181,18 +164,14 @@ if __name__ == "__main__":
         print(f"[FATAL] {e}")
         exit(1)
         
-    # 2. Inspect Raw Data (Sanity Check)
+    # 2. Inspect Raw Data
     print("\n--- RAW DATA INSPECTION ---")
     print(df_chain.head(3))
-    print(f"Columns: {df_chain.columns}")
     
-    # Verify mapping worked (Check if 'option_type' has 'C'/'P' or '1'/'0')
-    if "option_type" in df_chain.columns:
-        unique_types = df_chain["option_type"].unique().to_list()
-        print(f"Unique Option Types found: {unique_types} (Should be ['C', 'P'])")
-
     # 3. Process Data
     df_vol = calculate_daily_volume(df_chain)
+    print("\n--- AGGREGATED DATA ---")
+    print(df_vol.head(3))
 
     # 4. Plot
     if df_vol is not None:
