@@ -1,5 +1,6 @@
 import pytest
 import polars as pl
+import os
 from src.data.loader import load_and_standardize, DataSourceConfig
 
 # Define a "Weird" Vendor Format for testing
@@ -51,8 +52,12 @@ def test_loader_standardization(mock_raw_csv):
     4. Calculates derived cols (mid)
     5. Creates the IPC file
     """
+    # 0. Setup output directory (same as input for testing)
+    temp_dir = os.path.dirname(mock_raw_csv)
+
     # Run Loader
-    df = load_and_standardize("SPY", mock_raw_csv, TEST_CONFIG)
+    # We explicitly pass output_dir so it doesn't try to write to real "data/" folder
+    df = load_and_standardize("SPY", mock_raw_csv, TEST_CONFIG, output_dir=temp_dir)
     
     # 1. Check Column Names
     assert "datetime" in df.columns
@@ -79,5 +84,7 @@ def test_loader_standardization(mock_raw_csv):
     assert df["mid"][0] == 10.1
     
     # 5. Check Cache Creation
-    expected_arrow = mock_raw_csv.replace(".csv", ".arrow")
+    # The loader saves the file as "{SYMBOL}.arrow", regardless of input filename
+    expected_arrow = os.path.join(temp_dir, "SPY.arrow")
+    
     assert pl.read_ipc(expected_arrow).height == 2

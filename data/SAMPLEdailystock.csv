@@ -1,4 +1,4 @@
-,date_eod,ticker,open,close,high,close.1,volume
+,date_eod,ticker,open,close,high,low,volume
 0,2001-08-06,SAMPLE,2.075,2.0125,2.075,2.0125,209600
 1,2001-08-07,SAMPLE,2.0125,1.96125,2.0225,1.96125,556800
 2,2001-08-08,SAMPLE,1.955,2.01375,2.01875,2.01375,170400
