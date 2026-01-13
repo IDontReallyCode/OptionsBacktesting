@@ -65,3 +65,6 @@ venv.bak/
 config.py
 
 xx_*.py
+xx_*.png
+xx_*.drawio
+xx_*.md
