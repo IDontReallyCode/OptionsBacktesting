@@ -60,21 +60,23 @@ class Portfolio:
             # 4. Add to Total Equity
             self.equity += pos.market_value
 
+
+    # Update the signature and the cash deduction line
     def add_position(self, symbol: str, quantity: float, price: float, 
-                     meta: Dict = None):
+                     commission: float = 0.0, meta: Dict = None):
         """
         Adds a new trade. Handles creation of OptionPosition if meta provided.
         """
         if symbol in self.positions:
             # Average down / Increase size
             existing = self.positions[symbol]
+            # Update average price logic if needed, simplified here:
             total_cost = (existing.avg_price * existing.quantity) + (price * quantity)
             existing.quantity += quantity
             existing.avg_price = total_cost / existing.quantity if existing.quantity != 0 else 0.0
         else:
             # Create New
             if meta and "strike" in meta:
-                # It's an Option
                 self.positions[symbol] = OptionPosition(
                     symbol=symbol,
                     quantity=quantity,
@@ -85,18 +87,15 @@ class Portfolio:
                     multiplier=100
                 )
             else:
-                # It's a Stock
                 self.positions[symbol] = Position(
                     symbol=symbol,
                     quantity=quantity,
                     avg_price=price
                 )
         
-        # Deduct Cost from Cash (assuming Long)
-        # Note: ExecutionHandler usually calculates precise cost (commissions etc)
-        # This is a basic update.
+        # Deduct Cost and Commission
         cost = price * quantity
         if isinstance(self.positions[symbol], OptionPosition):
             cost *= 100
             
-        self.current_cash -= cost
+        self.current_cash -= (cost + commission)  # <--- FIXED: Deduct commission
