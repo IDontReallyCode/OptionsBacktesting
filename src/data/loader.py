@@ -98,130 +98,79 @@ SCHWAB_CONFIG = DataSourceConfig(
 
 # --- 3. CORE LOGIC ---
 
+# ... imports stay the same ...
+
 def load_and_standardize(
     symbol: str, 
-    raw_path: str, 
-    config: Union[DataSourceConfig, Dict],
-    output_dir: str = "data",
+    file_path: str, 
+    config: Union[DataSourceConfig, dict],
+    output_dir: str = None,
     force_reload: bool = False
-) -> pl.DataFrame:
+) -> tuple[pl.DataFrame, dict]:  # <--- CHANGED RETURN TYPE
     """
-    Reads a raw CSV, applies the config mapping, optimizes types, and saves a standardized .arrow file.
-    
-    Args:
-        symbol: Ticker symbol (e.g. "SPY").
-        raw_path: Path to the raw CSV file.
-        config: Either a DataSourceConfig object OR a simple dictionary mapping.
-        output_dir: Folder where the processed .arrow file will be saved.
-        force_reload: If True, ignores existing cache and re-processes.
+    Loads data and returns (DataFrame, Metadata).
+    Metadata contains info like {'source': 'cache'|'raw', 'path': ...}
     """
     
-    # ---------------------------------------------------------
-    # 0. SETUP PATHS & CONFIG
-    # ---------------------------------------------------------
-    
-    # Compatibility: If user passed a simple dict (like in detailed_example.py), wrap it.
-    if isinstance(config, dict):
-        config = DataSourceConfig(name="Generic", col_map=config)
+    # 0. Setup Output Path
+    out_path = None
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+        out_path = os.path.join(output_dir, f"{symbol}.arrow")
 
-    raw_path_obj = Path(raw_path)
-    out_dir_obj = Path(output_dir)
-    
-    # Create output directory if it doesn't exist
-    if not out_dir_obj.exists():
-        out_dir_obj.mkdir(parents=True, exist_ok=True)
-        
-    # Define the destination Arrow file path
-    ipc_path = out_dir_obj / f"{symbol}.arrow"
-
-    # ---------------------------------------------------------
-    # 1. FAST PATH: Load Cache
-    # ---------------------------------------------------------
-    if ipc_path.exists() and not force_reload:
-        print(f"[{symbol}] Loading standardized cache from: {ipc_path}")
+    # 1. Check Cache (FAST PATH)
+    if out_path and os.path.exists(out_path) and not force_reload:
+        print(f"[LOADER] Found cached data for {symbol}.")
         try:
-            return pl.read_ipc(ipc_path, memory_map=True)
+            df = pl.read_ipc(out_path)
+            # RETURN CACHE + METADATA
+            return df, {"source": "cache", "path": out_path} 
         except Exception as e:
-            print(f"[{symbol}] Cache corrupted ({e}). Re-processing...")
+            print(f"[WARN] Cache corrupted ({e}). Re-processing...")
 
-    # ---------------------------------------------------------
-    # 2. SLOW PATH: Ingest and Normalize
-    # ---------------------------------------------------------
-    print(f"[{symbol}] Ingesting Raw Data from {raw_path}...")
+    print(f"[LOADER] Processing Raw Data for {symbol}...")
     
-    if not raw_path_obj.exists():
-        raise FileNotFoundError(f"Source file not found: {raw_path}")
+    # 2. Normalize Config
+    if isinstance(config, dict):
+        mapping = config.get("col_map", config)
+        val_mapping = config.get("val_map", {})
+    else:
+        mapping = config.col_map
+        val_mapping = config.val_map
 
-    # Use Scan (Lazy) to handle massive files without blowing RAM
-    lf = pl.scan_csv(
-        raw_path_obj, 
-        try_parse_dates=True, 
-        ignore_errors=True
-    )
+    # 3. Read CSV
+    try:
+        df = pl.read_csv(file_path, try_parse_dates=True, ignore_errors=True)
+    except Exception as e:
+        raise RuntimeError(f"Failed to read CSV at {file_path}. Error: {e}")
 
-    # A. Rename Columns
-    existing_cols = lf.collect_schema().names()
+    # 4. Apply Column Renaming
+    existing_cols = set(df.columns)
+    valid_mapping = {k: v for k, v in mapping.items() if k in existing_cols}
     
-    # Filter map to only include columns that actually exist in this file
-    valid_renames = {k: v for k, v in config.col_map.items() if k in existing_cols}
-    
-    if valid_renames:
-        lf = lf.rename(valid_renames)
+    if valid_mapping:
+        print(f"[LOADER] Renaming columns: {valid_mapping}")
+        df = df.rename(valid_mapping)
 
-    # B. Value Normalization (e.g. "Call" -> "C")
-    for col_name, mapping in config.val_map.items():
-        if col_name in valid_renames.values():
-            lf = lf.with_columns(
-                pl.col(col_name).cast(pl.Utf8).replace(mapping)
+    # 5. Standardize Date Column
+    if "datetime" in df.columns:
+        if df["datetime"].dtype == pl.Utf8:
+            df = df.with_columns(
+                pl.col("datetime").str.strptime(pl.Datetime, "%Y-%m-%d", strict=False)
+            )
+        df = df.sort("datetime")
+
+    # 6. Apply Value Mapping
+    for col_name, map_dict in val_mapping.items():
+        if col_name in df.columns:
+            df = df.with_columns(
+                pl.col(col_name).cast(pl.Utf8).replace(map_dict)
             )
 
-    # ---------------------------------------------------------
-    # 3. MEMORY OPTIMIZATION & TYPE CASTING
-    # ---------------------------------------------------------
-    
-    current_cols = valid_renames.values()
+    # 7. Save to Arrow
+    if out_path:
+        df.write_ipc(out_path)
+        print(f"[LOADER] Saved processed data to: {out_path}")
 
-    # 1. Option Type: Categorical is huge memory saver vs String
-    if "option_type" in current_cols:
-        lf = lf.with_columns(pl.col("option_type").cast(pl.Categorical))
-
-    # 2. Symbol: Categorical saves memory if many rows share the same symbol
-    if "symbol" in current_cols:
-        lf = lf.with_columns(pl.col("symbol").cast(pl.Categorical))
-
-    # 3. Volume: UInt32 (0 to 4 billion) is sufficient and saves 50% vs Int64
-    if "volume" in current_cols:
-        lf = lf.with_columns(pl.col("volume").fill_null(0).cast(pl.UInt32))
-
-    # 4. Prices: Float64 is safer for financial math than Float32
-    price_cols = ["strike", "underlying_price", "bid", "ask", "open", "high", "low", "close"]
-    for p_col in price_cols:
-        if p_col in current_cols:
-            lf = lf.with_columns(pl.col(p_col).cast(pl.Float64))
-
-    # 5. Sorting (Crucial for Time-Series Replay)
-    if "datetime" in current_cols:
-        lf = lf.sort("datetime")
-
-    # 6. Calculate Midpoint (Helper)
-    if "bid" in current_cols and "ask" in current_cols:
-        lf = lf.with_columns(
-            ((pl.col("bid") + pl.col("ask")) / 2.0).alias("mid")
-        )
-
-    # ---------------------------------------------------------
-    # 4. EXECUTE AND CACHE
-    # ---------------------------------------------------------
-    try:
-        df = lf.collect()
-        
-        # Ensure 'datetime' exists, if not try to find 'date' and rename it
-        if "datetime" not in df.columns and "date" in df.columns:
-            df = df.rename({"date": "datetime"})
-
-        print(f"[{symbol}] Saving cache ({df.height} rows) to {ipc_path}...")
-        df.write_ipc(ipc_path)
-        return df
-        
-    except Exception as e:
-        raise RuntimeError(f"Failed to standardize {symbol}: {e}")
+    # RETURN PROCESSED + METADATA
+    return df, {"source": "raw", "path": file_path}
