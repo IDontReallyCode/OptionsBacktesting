@@ -10,7 +10,7 @@ Responsibility:
 
 from src.events import FillEvent
 from typing import List
-from datetime import date
+from datetime import datetime, date
 
 class OptionExchange:
     def __init__(self, data_handler):
@@ -24,7 +24,14 @@ class OptionExchange:
         if not current_dt:
             return []
             
-        current_date = current_dt.date()
+        # --- FIX START ---
+        # If it's a full datetime (YYYY-MM-DD HH:MM:SS), strip the time.
+        # If it's already a date (YYYY-MM-DD), use it as is.
+        if isinstance(current_dt, datetime):
+            current_date = current_dt.date()
+        else:
+            current_date = current_dt
+        # --- FIX END ---
         generated_fills = []
 
         for symbol, position in portfolio.positions.items():
