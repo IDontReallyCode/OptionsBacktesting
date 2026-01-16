@@ -108,28 +108,42 @@ graph TD
 
 ```text
 project_root/
-├── data/                   # Raw CSV files
+├── data/                       # Raw CSV files & Processed Arrow files
+├── examples/
+│   ├── load_display/
+│   │   ├── 01_load_display_stock.py
+│   │   ├── 02_load_display_option_volume.py
+│   │   ├── 03_load_display_option_30dte_atm_IV.py
+│   │   └── 04_load_display_stock_option.py
+│   └── stock_trading/
+│       └── 01_stock_trade_MA_Xover.py
 ├── src/
 │   ├── __init__.py
-│   ├── engine.py           # The Event Loop
-│   ├── events.py           # Event Class Definitions (Market, Signal, Order, Fill)
+│   ├── engine.py               # The Event Loop
+│   ├── events.py               # Event Class Definitions (Market, Signal, Order, Fill)
 │   ├── data/
 │   │   ├── __init__.py
-│   │   ├── handler.py      # Iterates/Serves data to the engine
-│   │   └── loader.py       # Standardizes CSVs -> Arrow Cache
-│   ├── strategy/
-│   │   ├── base.py
-│   │   └── moving_average.py
+│   │   ├── handler.py          # Iterates/Serves data to the engine
+│   │   └── loader.py           # Standardizes CSVs -> Arrow Cache
+│   ├── execution/
+│   │   ├── __init__.py
+│   │   ├── broker.py           # Order execution simulation
+│   │   └── exchange.py         # Expiration logic
 │   ├── portfolio/
 │   │   ├── __init__.py
-│   │   ├── portfolio.py
-│   │   ├── position.py     # Contains OptionPosition class
-│   │   └── risk.py
-│   └── execution/
-│       ├── broker.py
-│       └── exchange.py     # Expiration logic
-├── tests/                  # Pytest suite
-├── config.yaml             # Backtest parameters
-├── main.py                 # Entry point
-└── ARCHITECTURE.md         # This file
+│   │   ├── portfolio.py        # Tracks Cash & Holdings
+│   │   └── position.py         # Position Class Definitions
+│   └── strategy/
+│       ├── __init__.py
+│       ├── base.py             # Abstract Strategy Class
+│       ├── stock_basic.py      # Basic Stock strategies (e.g. MA Cross)
+│       └── example_MA_buy_call.py
+├── tests/
+│   ├── test_engine.py
+│   ├── test_execution.py
+│   ├── test_handler.py
+│   ├── test_loader.py
+│   ├── test_portfolio.py
+│   └── test_strategy.py
+└── structure.md                # This file
 ```

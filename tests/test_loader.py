@@ -56,8 +56,8 @@ def test_loader_standardization(mock_raw_csv):
     temp_dir = os.path.dirname(mock_raw_csv)
 
     # Run Loader
-    # We explicitly pass output_dir so it doesn't try to write to real "data/" folder
-    df = load_and_standardize("SPY", mock_raw_csv, TEST_CONFIG, output_dir=temp_dir)
+    # FIX: Unpack the tuple (df, meta)
+    df, meta = load_and_standardize("SPY", mock_raw_csv, TEST_CONFIG, output_dir=temp_dir)
     
     # 1. Check Column Names
     assert "datetime" in df.columns

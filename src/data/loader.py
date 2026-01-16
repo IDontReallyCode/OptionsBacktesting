@@ -98,15 +98,13 @@ SCHWAB_CONFIG = DataSourceConfig(
 
 # --- 3. CORE LOGIC ---
 
-# ... imports stay the same ...
-
 def load_and_standardize(
     symbol: str, 
     file_path: str, 
     config: Union[DataSourceConfig, dict],
     output_dir: str = None,
     force_reload: bool = False
-) -> tuple[pl.DataFrame, dict]:  # <--- CHANGED RETURN TYPE
+) -> tuple[pl.DataFrame, dict]: 
     """
     Loads data and returns (DataFrame, Metadata).
     Metadata contains info like {'source': 'cache'|'raw', 'path': ...}
@@ -123,7 +121,6 @@ def load_and_standardize(
         print(f"[LOADER] Found cached data for {symbol}.")
         try:
             df = pl.read_ipc(out_path)
-            # RETURN CACHE + METADATA
             return df, {"source": "cache", "path": out_path} 
         except Exception as e:
             print(f"[WARN] Cache corrupted ({e}). Re-processing...")
@@ -166,11 +163,27 @@ def load_and_standardize(
             df = df.with_columns(
                 pl.col(col_name).cast(pl.Utf8).replace(map_dict)
             )
+            
+    # 7. Optimize Types (Memory Efficiency)
+    # Convert 'option_type' and 'symbol' to Categorical
+    for col in ["option_type", "symbol"]:
+        if col in df.columns:
+            df = df.with_columns(pl.col(col).cast(pl.Categorical))
 
-    # 7. Save to Arrow
+    # Convert 'volume' to UInt32 (smaller int)
+    if "volume" in df.columns:
+         df = df.with_columns(pl.col("volume").cast(pl.UInt32))
+
+    # 8. Add Derived Columns
+    # Calculate Mid Price if bid/ask exist
+    if "bid" in df.columns and "ask" in df.columns:
+        df = df.with_columns(
+            ((pl.col("bid") + pl.col("ask")) / 2.0).alias("mid")
+        )
+
+    # 9. Save to Arrow
     if out_path:
         df.write_ipc(out_path)
         print(f"[LOADER] Saved processed data to: {out_path}")
 
-    # RETURN PROCESSED + METADATA
     return df, {"source": "raw", "path": file_path}
